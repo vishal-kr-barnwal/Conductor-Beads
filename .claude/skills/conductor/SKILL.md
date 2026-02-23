@@ -27,46 +27,7 @@ Conductor enables context-driven development by:
 4. Executing with TDD practices and progress tracking
 5. **Parallel execution** of independent tasks using sub-agents
 
-## Parallel Execution (New Feature)
-
-Conductor now supports parallel task execution for eligible phases:
-
-### How It Works
-- During `/conductor-newtrack`, tasks are analyzed for parallelization potential
-- Tasks with no file conflicts and no dependencies can run in parallel
-- Parallel phases use `<!-- execution: parallel -->` annotation
-- Each task has `<!-- files: ... -->` for exclusive file ownership
-- Dependencies use `<!-- depends: ... -->` annotation
-
-### Plan.md Format for Parallel Phases
-```markdown
-## Phase 1: Core Setup
-<!-- execution: parallel -->
-
-- [ ] Task 1: Create auth module
-  <!-- files: src/auth/index.ts, src/auth/index.test.ts -->
-  
-- [ ] Task 2: Create config module
-  <!-- files: src/config/index.ts -->
-  
-- [ ] Task 3: Create utilities
-  <!-- files: src/utils/index.ts -->
-  <!-- depends: task1 -->
-```
-
-### Execution Flow
-1. **Coordinator** parses parallel annotations
-2. Detects file conflicts (fails safe if found)
-3. Spawns sub-agents via `Task()` for independent tasks
-4. Monitors `parallel_state.json` for completion
-5. Aggregates results and updates plan.md
-
-### When to Use Parallel Execution
-- ✅ Tasks modifying different files
-- ✅ Independent components (auth, config, utils)
-- ✅ Multiple test file creation
-- ❌ Tasks with shared state
-- ❌ Tasks with sequential dependencies
+For parallel execution details (annotations, state schema, when to use), see [references/workflows.md](references/workflows.md#parallel-execution).
 
 ## Context Loading
 
@@ -86,14 +47,13 @@ For active tracks, also load:
 
 ## Learnings System (Ralph-style)
 
-Conductor captures and consolidates learnings across tracks, inspired by [Ralph](https://github.com/snarktank/ralph).
+Conductor captures and consolidates learnings across tracks. For full details, see [references/learnings-system.md](references/learnings-system.md).
 
 ### Key Files
 - `conductor/patterns.md` - Project-level consolidated patterns
 - `conductor/tracks/<id>/learnings.md` - Per-track discoveries
 
 ### Templates
-Templates are bundled in the skill's `references/` folder:
 - [references/patterns-template.md](references/patterns-template.md) - Full patterns.md template
 - [references/learnings-template.md](references/learnings-template.md) - Full learnings.md template
 
@@ -103,39 +63,17 @@ Templates are bundled in the skill's `references/` folder:
 3. **Archive** - Extract remaining patterns before archiving
 4. **Inherit** - New tracks read `patterns.md` to prime context
 
-### Learnings Entry Format
-```markdown
-## [YYYY-MM-DD HH:MM] - Phase N Task M: <task_name>
-Thread: $AMP_CURRENT_THREAD_ID
-- **Implemented:** <brief description>
-- **Files changed:** <list>
-- **Commit:** <sha_7chars>
-- **Learnings:**
-  - Patterns: <reusable patterns discovered>
-  - Gotchas: <things to watch out for>
-  - Context: <useful context for future>
----
-```
-
-### Proactive Behaviors for Learnings
-- **On implement start**: Read `patterns.md` and announce pattern count
-- **On task complete**: Prompt for learnings capture
-- **On phase complete**: Offer pattern elevation to `patterns.md`
-- **On archive**: Extract remaining patterns before archiving
-- **On refresh**: Consolidate learnings across all tracks
-
 ## Beads Integration
 
-Beads integration is **always attempted** for persistent task memory. If `bd` CLI is unavailable or fails, the user can choose to continue without it.
+Beads integration is **always attempted** for persistent task memory. If `bd` CLI is unavailable or fails, the user can choose to continue without it. All conductor commands work normally without Beads.
 
-### Detection (MUST check before using bd commands)
+For full Beads details (availability check, CLI commands, session protocol, chemistry patterns), see [references/beads-integration.md](references/beads-integration.md).
 
-Before using ANY `bd` command, you MUST verify:
-1. `bd` CLI is installed: `which bd` returns a path
-2. `conductor/beads.json` exists AND has `"enabled": true`
+For Beads overview within workflow context (sync behavior, configuration, graceful degradation), see [references/workflows.md](references/workflows.md#beads-integration).
+
+### Quick Detection (MUST check before using bd commands)
 
 ```bash
-# Check availability - run this before any bd command
 if which bd > /dev/null 2>&1 && [ -f conductor/beads.json ]; then
   BEADS_ENABLED=$(cat conductor/beads.json | grep -o '"enabled"[[:space:]]*:[[:space:]]*true' || echo "")
   if [ -n "$BEADS_ENABLED" ]; then
@@ -143,79 +81,6 @@ if which bd > /dev/null 2>&1 && [ -f conductor/beads.json ]; then
   fi
 fi
 ```
-
-### If Beads is NOT available:
-- **DO NOT** run any `bd` commands
-- Use only plan.md markers for task tracking
-- All conductor commands work normally without Beads
-
-### If Beads IS available:
-- Tracks become Beads epics
-- Tasks sync to Beads for persistent memory
-- Use `bd ready` instead of manual task selection
-- Notes survive context compaction
-
-### Beads CLI Commands (`bd`)
-
-#### Essential Commands
-| Command | Description |
-|---------|-------------|
-| `bd init` | Initialize Beads in project (creates `.beads/`) |
-| `bd prime` | AI-optimized workflow context (run at session start) |
-| `bd ready` | List unblocked, ready-to-work tasks |
-| `bd show <id>` | Show task details and audit trail |
-| `bd sync` | Push local changes to remote (run at session end) |
-
-#### Task Lifecycle
-| Command | Description |
-|---------|-------------|
-| `bd create "<desc>" -p <priority> [--notes "..."]` | Create task with optional notes |
-| `bd create "<desc>" --deps discovered-from:<id>` | Create and link discovered work (one command) |
-| `bd update <id> --status in_progress` | Mark task as in-progress |
-| `bd update <id> --notes "..."` | Add notes (survives compaction!) |
-| `bd close <id> --reason "..."` | Complete a task |
-| `bd close <id> --continue` | Complete and auto-advance to next step |
-| `bd list [--parent <epic-id>] [--status <status>]` | List tasks with filters |
-| `bd dep tree <id>` | Visualize dependency graph |
-
-#### Dependencies
-| Command | Description |
-|---------|-------------|
-| `bd dep add <child> <parent>` | Set dependency (child waits for parent) |
-| `bd dep add <id> external:<project>:<capability>` | Cross-project dependency |
-
-#### Molecules (Workflow Templates) - v0.34+
-| Command | Description |
-|---------|-------------|
-| `bd formula list` | Available formulas (workflow templates) |
-| `bd cook <formula>` | Formula → Protomolecule (frozen template) |
-| `bd mol pour <proto>` | Create persistent molecule (auditable) |
-| `bd mol wisp <proto>` | Create ephemeral molecule (no audit trail) |
-| `bd mol current` | Where am I in the current molecule? |
-| `bd mol squash <id>` | Condense completed molecule to digest |
-| `bd mol burn <wisp>` | Delete wisp without trace |
-| `bd mol distill <epic> --as "<name>"` | Extract reusable template from ad-hoc work |
-
-#### Agents & Gates (v0.40+)
-| Command | Description |
-|---------|-------------|
-| `bd agent register <name>` | Register parallel worker agent |
-| `bd agent heartbeat` | Keep worker alive (prevents timeout) |
-| `bd gate create "<checkpoint>"` | Create human-in-the-loop gate |
-| `bd gate wait <id>` | Wait for human approval |
-| `bd gate approve <id>` | Approve gate (human action) |
-
-#### Worktrees (v0.40+)
-| Command | Description |
-|---------|-------------|
-| `bd worktree create <branch>` | Create isolated worktree for parallel work |
-| `bd worktree list` | List active worktrees |
-
-#### Maintenance
-| Command | Description |
-|---------|-------------|
-| `bd compact --auto` | Archive old completed tasks |
-| `bd doctor` | Health check |
 
 ## Proactive Behaviors
 
@@ -225,6 +90,11 @@ fi
 4. **On all tasks complete**: Congratulate and offer archive/cleanup
 5. **On stale context detected**: If setup >2 days old or significant codebase changes detected, suggest `/conductor-refresh`
 6. **On Beads available**: If `bd` CLI detected during setup, offer integration
+7. **On implement start**: Read `patterns.md` and announce pattern count
+8. **On task complete**: Prompt for learnings capture
+9. **On phase complete**: Offer pattern elevation to `patterns.md`
+10. **On archive**: Extract remaining patterns before archiving
+11. **On refresh**: Consolidate learnings across all tracks
 
 ## Intent Mapping
 
@@ -247,11 +117,37 @@ fi
 | "Quick exploration" / "Ephemeral track" | `/conductor-wisp [formula]` |
 | "Extract template" / "Create reusable pattern" | `/conductor-distill [track_id]` |
 
+## Command Execution
+
+When a user invokes any `/conductor-*` command, **read the corresponding command reference** for the full step-by-step protocol:
+
+| Command | Full Protocol |
+|---------|---------------|
+| `/conductor-setup` | [references/commands/setup.md](references/commands/setup.md) |
+| `/conductor-newtrack` | [references/commands/newtrack.md](references/commands/newtrack.md) |
+| `/conductor-implement` | [references/commands/implement.md](references/commands/implement.md) |
+| `/conductor-status` | [references/commands/status.md](references/commands/status.md) |
+| `/conductor-revert` | [references/commands/revert.md](references/commands/revert.md) |
+| `/conductor-validate` | [references/commands/validate.md](references/commands/validate.md) |
+| `/conductor-block` | [references/commands/block.md](references/commands/block.md) |
+| `/conductor-skip` | [references/commands/skip.md](references/commands/skip.md) |
+| `/conductor-revise` | [references/commands/revise.md](references/commands/revise.md) |
+| `/conductor-archive` | [references/commands/archive.md](references/commands/archive.md) |
+| `/conductor-export` | [references/commands/export.md](references/commands/export.md) |
+| `/conductor-handoff` | [references/commands/handoff.md](references/commands/handoff.md) |
+| `/conductor-refresh` | [references/commands/refresh.md](references/commands/refresh.md) |
+| `/conductor-formula` | [references/commands/formula.md](references/commands/formula.md) |
+| `/conductor-wisp` | [references/commands/wisp.md](references/commands/wisp.md) |
+| `/conductor-distill` | [references/commands/distill.md](references/commands/distill.md) |
+
+**Important:** Always read the full command reference before executing. Each file contains the complete protocol with error handling, Beads integration, and user interaction flows.
+
 ## References
 
-- **Detailed workflows**: [references/workflows.md](references/workflows.md) - Step-by-step command execution
+- **Workflow overview**: [references/workflows.md](references/workflows.md) - Commands table, Beads overview, state files, status markers, parallel execution
+- **Command protocols**: [references/commands/](references/commands/) - Full step-by-step execution details for all 16 commands
 - **Directory structure**: [references/structure.md](references/structure.md) - File layout and status markers
-- **Beads integration**: [references/beads-integration.md](references/beads-integration.md) - Session protocol, chemistry patterns
-- **Learnings system**: [references/learnings-system.md](references/learnings-system.md) - Ralph-style knowledge capture
+- **Beads integration**: [references/beads-integration.md](references/beads-integration.md) - Session protocol, CLI commands, chemistry patterns
+- **Learnings system**: [references/learnings-system.md](references/learnings-system.md) - Ralph-style knowledge capture details
 - **Patterns template**: [references/patterns-template.md](references/patterns-template.md) - Template for conductor/patterns.md
 - **Learnings template**: [references/learnings-template.md](references/learnings-template.md) - Template for track learnings.md
