@@ -91,7 +91,7 @@ NEXT: Implement rate limiting"
 
 ## Requirements
 
-- [bd CLI](https://github.com/steveyegge/beads) installed (`brew install steveyegge/beads/bd`)
+- [bd CLI](https://github.com/steveyegge/beads) installed (`brew install beads`)
 - A git repository (bd requires git for sync)
 - Initialized database (`bd init` in project root)
 
@@ -99,6 +99,7 @@ NEXT: Implement rate limiting"
 
 | Version | Features |
 |---------|----------|
+| v0.47.0+ | Pull-first sync, resolve-conflicts, dry-run create, gate auto-discovery |
 | v0.43.0+ | Full support: agents, gates, worktrees, chemistry patterns |
 | v0.40.0+ | Agent beads, async gates, worktree management |
 | v0.34.0+ | Molecules, wisps, cross-project dependencies |
@@ -107,7 +108,7 @@ NEXT: Implement rate limiting"
 
 ## Contributing
 
-This skill is maintained at [github.com/steveyegge/beads](https://github.com/steveyegge/beads) in the `skills/beads/` directory.
+This skill is maintained at [github.com/steveyegge/beads](https://github.com/steveyegge/beads) in the `claude-plugin/skills/beads/` directory.
 
 Issues and PRs welcome for:
 - Documentation improvements
