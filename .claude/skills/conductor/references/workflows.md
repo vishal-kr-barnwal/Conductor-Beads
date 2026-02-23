@@ -82,7 +82,7 @@ Each command has a full step-by-step protocol. **Read the linked file before exe
 
 ## Beads Integration
 
-Conductor integrates with [Beads](https://github.com/lispysnake/beads) for enhanced task tracking and dependency management. **Beads integration is always attempted** - if `bd` CLI is unavailable or fails, the user can choose to continue without persistent task memory.
+Conductor integrates with [Beads](https://github.com/steveyegge/beads) for enhanced task tracking and dependency management. **Beads integration is always attempted** - if `bd` CLI is unavailable or fails, the user can choose to continue without persistent task memory.
 
 ### CRITICAL: Availability Check
 
@@ -122,7 +122,12 @@ Run the detection check, then use bd commands:
 | `bd update <id> --status <status>` | Update task status |
 | `bd close <id> --reason "<message>"` | Complete task with summary |
 | `bd show <id>` | View task details and dependencies |
-| `bd compact [<id>]` | Compact completed tasks to reduce clutter |
+| `bd admin compact [<id>]` | Compact completed tasks to reduce clutter |
+| `bd relate <id1> <id2>` | Link related issues (bidirectional) |
+| `bd dolt push` | Push Dolt data to remote |
+| `bd dolt start` | Start Dolt SQL server (required v0.56+) |
+
+> **v0.56+:** Beads requires a running Dolt SQL server. Ensure `bd dolt start` has been run before using bd commands.
 
 ### Workflow Integration Points (only when Beads enabled)
 
@@ -133,7 +138,7 @@ Run the detection check, then use bd commands:
 | **Implement** | `bd ready` for task selection, sync status on progress |
 | **Block** | `bd update <id> --status blocked` with reason |
 | **Complete Task** | `bd close <id> --reason "commit: <sha>"` |
-| **Archive** | `bd compact` to clean up completed tasks |
+| **Archive** | `bd admin compact` to clean up completed tasks |
 
 ### Sync Behavior (only when Beads enabled)
 
@@ -157,6 +162,8 @@ Run the detection check, then use bd commands:
   }
 }
 ```
+
+> **Note:** Since v0.56, Beads uses Dolt as the only backend. The `auto_sync` option triggers `bd dolt push` (previously `bd sync`).
 
 ### Graceful Degradation
 

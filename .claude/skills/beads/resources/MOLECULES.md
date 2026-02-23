@@ -4,13 +4,15 @@ This reference covers bd's molecular chemistry system for reusable work template
 
 ## The Chemistry Metaphor
 
-bd v0.34.0 introduces a chemistry-inspired workflow system:
+bd v0.34.0+ introduces a chemistry-inspired workflow system:
 
 | Phase | Name | Storage | Synced? | Use Case |
 |-------|------|---------|---------|----------|
 | **Solid** | Proto | `.beads/` | Yes | Reusable template (epic with `template` label) |
 | **Liquid** | Mol | `.beads/` | Yes | Persistent instance (real issues from template) |
-| **Vapor** | Wisp | `.beads-wisp/` | No | Ephemeral instance (operational work, no audit trail) |
+| **Vapor** | Wisp | Dolt `wisps` table | No (`dolt_ignore`) | Ephemeral instance (operational work, no audit trail) |
+
+> **Migration note (v0.56+):** Wisps previously used a separate SQLite database in `.beads-wisp/`. They now live in a Dolt-backed `wisps` table with `dolt_ignore`. Run `bd migrate wisps` to migrate existing data.
 
 **Phase transitions:**
 - `spawn` / `pour`: Solid (proto) → Liquid (mol)
@@ -349,7 +351,7 @@ bd mol distill bd-release-epic --as "Release Process" --var version=X.Y.Z
 - Check proto for `{{key}}` placeholders with `bd mol show`
 
 **"Wisp commands fail"**
-- Wisps stored in `.beads-wisp/` (separate from `.beads/`)
+- Wisps stored in Dolt `wisps` table (excluded via `dolt_ignore`)
 - Check `bd mol wisp list` for active wisps
 
 **"External dependency not satisfied"**

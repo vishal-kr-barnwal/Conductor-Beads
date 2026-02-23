@@ -4,6 +4,8 @@
 
 Conductor integrates with [Beads](https://github.com/steveyegge/beads) to provide persistent task memory that survives context compaction. This creates a hybrid system:
 
+> **Compatible with Beads v0.56+.** Requires Dolt backend (now the only backend).
+
 - **Conductor**: Human-readable specs and plans
 - **Beads**: Agent-optimized task state with dependency tracking
 
@@ -35,9 +37,11 @@ fi
 
 ## How It Works (when Beads is enabled)
 
-### Session Protocol (Enhanced - Based on Beads v0.43+ Best Practices)
+### Session Protocol (Enhanced - Based on Beads v0.56+ Best Practices)
 
 The recommended session workflow for maximum context preservation:
+
+> **v0.56+:** Beads requires a running Dolt SQL server. Start with `bd dolt start` before using bd commands. The server is typically started once and left running.
 
 1. `bd prime` — Load AI-optimized workflow context (run first!)
 2. `bd ready` — Find unblocked work
@@ -45,7 +49,7 @@ The recommended session workflow for maximum context preservation:
 4. `bd update <id> --status in_progress` — Start work
 5. **Add notes as you work** (critical for compaction survival)
 6. `bd close <id> --continue` — Complete and auto-advance to next step
-7. `bd sync` — Persist to git (always run at session end)
+7. `bd dolt push` — Push to Dolt remote (always run at session end)
 
 **Key insight:** `bd close --continue` automatically marks the next step as in_progress, reducing commands from 3 to 1.
 
@@ -69,9 +73,7 @@ conductor/tracks/auth_20250115/
 └── metadata.json    # Links to Beads epic ID + task mapping
 ```
 
-```
-.beads/epics/auth_20250115.md   # Beads: persistent state
-```
+Beads state is stored in the Dolt database (not as files). Access via `bd show <epic_id>`.
 
 ### Task ID Mapping
 
@@ -192,6 +194,49 @@ Protomolecule (frozen template) ─── Solid
                                            └▶ bd burn ──▶ (gone)
 ```
 
+## Graph Links Integration
+
+Conductor can leverage Beads graph links for richer track relationships:
+
+| Link Type | Conductor Use Case | Command |
+|-----------|-------------------|---------|
+| `relates_to` | Link related tracks/tasks | `bd relate <id1> <id2>` |
+| `supersedes` | Spec revisions (v1 → v2) | `bd supersede <old> --with <new>` |
+| `duplicate_of` | Deduplicate similar tasks | `bd duplicate <dup> --of <canonical>` |
+| `discovered_from` | Work discovered during implementation | `bd create --deps discovered-from:<parent>` |
+
+### Track Relationship Example
+
+```bash
+# Two tracks are related
+bd relate conductor_auth conductor_security
+
+# Spec revision supersedes old version
+bd supersede bd-spec-v1 --with bd-spec-v2
+
+# During implementation, find duplicate task
+bd duplicate bd-task-dup --of bd-task-canonical
+```
+
+## Messaging Integration
+
+When using parallel workers, Beads messaging can coordinate between agents:
+
+```bash
+# Coordinator notifies worker
+bd mail send worker_1/ -s "Task assigned" -m "Work on bd-task-123"
+
+# Worker reports completion
+bd mail reply msg-123 -m "Task completed, commit abc1234"
+
+# Check for worker updates
+bd mail inbox
+```
+
+> **Note:** Messaging requires a mail delegate (e.g., `gt mail`). If not configured, use `bd update --notes` for coordination instead.
+
+> **Tip:** Use the `decision` issue type (`bd create -t decision`) for architectural decisions made during `/conductor-revise`.
+
 ## Configuration
 
 Enable integration via `conductor/beads.json`:
@@ -222,7 +267,7 @@ Enable integration via `conductor/beads.json`:
 | `/conductor-status` | `bd ready`, `bd show` | Show available tasks, epic status |
 | `/conductor-block` | `bd update --status blocked` | Mark task blocked with reason |
 | `/conductor-skip` | `bd update --status skipped` | Skip task with justification |
-| `/conductor-archive` | `bd compact --auto` | Archive completed epics |
+| `/conductor-archive` | `bd admin compact --auto` | Archive completed epics |
 
 ### Example Flow
 
@@ -274,7 +319,7 @@ DISCOVERED: Found race condition in token refresh (created bd-xyz)"
 - Write notes as if explaining to someone with zero context
 - Include technical specifics, not vague progress
 - Update notes BEFORE session end or handoff
-- Use `bd sync` after updating notes to ensure persistence
+- Use `bd dolt push` after updating notes to ensure persistence
 
 This enables full context recovery after compaction with zero conversation history.
 
@@ -394,8 +439,8 @@ bd ready --assignee worker_1_auth --json
    # Worker completes task
    bd close <task_id> --reason "Completed" --json
    
-   # CRITICAL: Force sync after parallel work
-   bd sync
+   # CRITICAL: Force push after parallel work
+   bd dolt push
    ```
 
 ### Coordinator Protocol
@@ -413,7 +458,7 @@ for task in parallel_tasks:
 # (Each worker updates its own assigned task)
 
 # 3. After all workers complete
-bd sync  # Force sync all changes
+bd dolt push  # Force push all changes
 bd ready --epic <epic_id> --json  # Verify all complete
 ```
 
@@ -423,10 +468,10 @@ Beads handles concurrent updates safely:
 
 | Scenario | Beads Behavior |
 |----------|----------------|
-| **Multiple `bd update` simultaneously** | SQLite transactions serialize writes |
+| **Multiple `bd update` simultaneously** | Dolt transactions serialize writes |
 | **Same task updated by two workers** | Last writer wins (avoid via assignee) |
 | **Parallel `bd create`** | Hash IDs prevent collisions |
-| **Rapid status changes** | 30s debounce batches updates |
+| **Rapid status changes** | Batch auto-commit mode reduces commit bloat |
 
 ### Notes Format for Parallel Context
 
@@ -461,6 +506,9 @@ bd update <task_id> --assignee "" --json
 # Check if Beads is available
 which bd
 
+# Start Dolt server (required v0.56+)
+bd dolt start
+
 # Initialize integration
 bd init
 echo '{"enabled": true}' > conductor/beads.json
@@ -470,4 +518,7 @@ bd show --epic conductor_<track_id>
 
 # See what's ready to work on
 bd ready
+
+# Push changes to remote
+bd dolt push
 ```

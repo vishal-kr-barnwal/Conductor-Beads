@@ -185,9 +185,9 @@ Display:
    Notes should be self-contained - no conversation context assumed.
    Include technical specifics, not vague progress.
 
-5. **Force Sync to Remote:**
+5. **Force Push to Remote:**
    ```bash
-   bd sync  # Ensures changes reach remote immediately
+   bd dolt push  # Ensures changes reach remote immediately
    ```
 
 **Benefit:** Beads notes survive context compaction, enabling seamless session resume.

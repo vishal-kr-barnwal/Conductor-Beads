@@ -1,53 +1,28 @@
 ---
-description: Synchronize issues with git remote
-argument-hint: [--dry-run] [--message] [--status] [--merge]
+description: "DEPRECATED: Use bd dolt push instead. Synchronize issues with Dolt remote."
+argument-hint: "[DEPRECATED]"
 ---
 
-Synchronize issues with git remote in a single operation.
+> **⚠️ DEPRECATED (v0.56+):** `bd sync` is now a no-op. Use `bd dolt push` and `bd dolt commit` instead.
 
-## Sync Steps
+The JSONL-based sync pipeline has been completely removed. Dolt-native push/pull via git remotes is the only sync mechanism.
 
-1. Commit pending changes to Dolt
-2. Pull from remote (with conflict resolution)
-3. Merge any updates
-4. Push to remote
+## Replacement Commands
 
-Wraps the Dolt sync workflow for multi-device use.
+| Old Command | New Command |
+|-------------|-------------|
+| `bd sync` | `bd dolt push` |
+| `bd sync --flush-only` | `bd dolt commit -m "message"` |
+| `bd sync --no-push` | (automatic with Dolt server) |
 
-## Usage
+## Current Dolt Workflow
 
-- **Basic sync**: `bd sync`
-- **Preview**: `bd sync --dry-run`
-- **Custom message**: `bd sync --message "Closed sprint issues"`
-- **Pull only**: `bd sync --no-push`
-- **Push only**: `bd sync --no-pull`
-- **Flush only**: `bd sync --flush-only` (commit to Dolt without pushing)
-- **Import only**: `bd sync --import-only` (pull without pushing)
+```bash
+# Commit pending changes
+bd dolt commit -m "Session work"
 
-## Separate Branch Workflow
+# Push to remote
+bd dolt push
+```
 
-When using a separate sync branch (configured via `sync.branch`), additional commands are available:
-
-- **Check status**: `bd sync --status` - Show diff between sync branch and main
-- **Merge to main**: `bd sync --merge` - Merge sync branch back to main branch
-- **Preview merge**: `bd sync --merge --dry-run` - Preview what would be merged
-
-### Merge Workflow
-
-When working with a protected main branch and separate sync branch:
-
-1. Beads commits go to the sync branch (e.g., `beads-metadata`)
-2. Use `bd sync --status` to review pending changes
-3. When ready, use `bd sync --merge` to merge back to main
-4. After merge, run `bd import` to update the database
-5. Run `bd sync` to push changes to remote
-
-The merge command includes safety checks:
-- Verifies you're not on the sync branch
-- Checks for uncommitted changes in working tree
-- Detects and reports merge conflicts with resolution steps
-- Uses `--no-ff` to create a merge commit for clear history
-
-## Note
-
-Most users should rely on the Dolt server's automatic sync (with `dolt.auto-commit` enabled) instead of running manual sync. This command is useful for one-off syncs or when not using the Dolt server.
+Most users should rely on the Dolt server's automatic commits (one per write command). Use `bd dolt push` at session end to ensure data reaches the remote.

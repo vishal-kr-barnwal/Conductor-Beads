@@ -234,7 +234,7 @@ Implement track: $ARGUMENTS
                  COMMIT: <sha>
                  FILES CHANGED: <list>' --json
                - bd close <beads_task_id> --continue --reason 'Task completed' --json
-               - bd sync  # CRITICAL: Force sync
+               - bd dolt push  # CRITICAL: Force push to remote
             
             ## Spec Context
             <relevant_spec_excerpt>
@@ -277,9 +277,9 @@ Implement track: $ARGUMENTS
       
       **c7. Aggregate Results:**
       - Wait until all workers complete
-      - **If Beads enabled:** Force sync all changes:
+      - **If Beads enabled:** Force push all changes:
         ```bash
-        bd sync
+        bd dolt push
         bd ready --epic <epic_id> --json  # Verify all complete
         bd update <epic_id> --notes "PARALLEL PHASE COMPLETE: <phase>
         WORKERS: <N> succeeded

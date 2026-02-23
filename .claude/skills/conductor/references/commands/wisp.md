@@ -27,7 +27,7 @@ Create ephemeral exploration track: $ARGUMENTS
 **PROTOCOL: Explain ephemeral exploration tracks.**
 
 Wisps are **ephemeral** workflow instances that:
-- Live in `.beads-wisp/` (separate from `.beads/`)
+- Live in Dolt `wisps` table (excluded from sync via `dolt_ignore`)
 - Are **never** synced to git
 - Leave no permanent audit trail
 - Perfect for exploration, debugging, quick fixes

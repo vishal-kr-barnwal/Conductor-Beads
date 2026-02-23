@@ -2,6 +2,8 @@
 
 Detailed step-by-step workflows for common bd usage patterns with checklists.
 
+> **v0.56+:** Beads requires a running Dolt SQL server. Start with `bd dolt start` or `dolt sql-server` before using bd commands.
+
 ## Contents
 
 - [Session Start Workflow](#session-start) - Check bd ready, establish context

@@ -77,7 +77,7 @@ For Beads overview within workflow context (sync behavior, configuration, gracef
 if which bd > /dev/null 2>&1 && [ -f conductor/beads.json ]; then
   BEADS_ENABLED=$(cat conductor/beads.json | grep -o '"enabled"[[:space:]]*:[[:space:]]*true' || echo "")
   if [ -n "$BEADS_ENABLED" ]; then
-    # Beads is available and enabled - use bd commands
+    # Beads is available and enabled - use bd commands (requires Dolt server: bd dolt start)
   fi
 fi
 ```

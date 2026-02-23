@@ -179,7 +179,7 @@ Display:
 
 5. **Force Sync to Remote:**
    ```bash
-   bd sync  # Ensures changes reach remote immediately
+   bd dolt push  # Ensures changes reach remote immediately
    ```
 
 **Benefit:** Beads notes survive context compaction, enabling seamless session resume.

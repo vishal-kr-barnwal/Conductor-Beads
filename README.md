@@ -258,6 +258,8 @@ Shows:
 
 ### Essential Beads Commands
 
+> **v0.56+:** Beads requires a Dolt SQL server. Start with `bd dolt start` before using commands.
+
 | Command | Description |
 |---------|-------------|
 | `bd prime` | Load AI-optimized workflow context (run first!) |
@@ -268,7 +270,9 @@ Shows:
 | `bd close <id> --continue` | Complete task and auto-advance to next |
 | `bd update <id> --notes "context"` | Add notes for session resume |
 | `bd dep add <child> <parent>` | Add dependency between tasks |
-| `bd sync` | Force sync to remote (use at session end) |
+| `bd relate <id1> <id2>` | Link related issues (bidirectional) |
+| `bd dolt push` | Push to Dolt remote (use at session end) |
+| `bd dolt start` | Start Dolt SQL server (required v0.56+) |
 
 ### Molecule Commands (v0.34+)
 
@@ -432,7 +436,7 @@ flowchart LR
     subgraph COMPLETE[On Completion]
         H --> I["bd close <id> --reason"]
         I --> J[Update plan.md with SHA]
-        J --> K["bd sync"]
+        J --> K["bd dolt push"]
     end
 ```
 

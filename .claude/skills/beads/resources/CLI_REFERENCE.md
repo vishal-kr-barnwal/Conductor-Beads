@@ -1,7 +1,7 @@
 # CLI Command Reference
 
 **For:** AI agents and developers using bd command-line interface
-**Version:** 0.47.1+
+**Version:** 0.56.0+
 
 ## Quick Navigation
 
@@ -13,6 +13,9 @@
 - [Visualization](#visualization)
 - [Advanced Operations](#advanced-operations)
 - [Database Management](#database-management)
+- [Dolt Server Management](#dolt-server-management)
+- [Graph Links](#graph-links)
+- [Messaging](#messaging)
 
 ## Health & Status
 
@@ -497,7 +500,7 @@ bd import -i issues.jsonl --orphan-handling strict     # Fail if parent is missi
 
 # Configure default orphan handling behavior
 bd config set import.orphan_handling "resurrect"
-bd sync  # Now uses resurrect mode by default
+bd dolt push  # Now uses resurrect mode by default
 ```
 
 **Orphan handling modes:**
@@ -547,15 +550,84 @@ These invariants prevent data loss and would have caught issues like GH #201 (mi
 ### Sync Operations
 
 ```bash
-# Manual sync (force immediate export/import/commit/push)
-bd sync
+# Dolt-native sync (replaces legacy bd sync)
+bd dolt push                                           # Push to Dolt remote
+bd dolt commit -m "message"                            # Commit pending changes
+bd dolt commit --stdin                                 # Multi-line commit from stdin
 
-# What it does:
-# 1. Commit pending changes to Dolt
-# 2. Pull from remote
-# 3. Merge any updates
-# 4. Push to remote
+# Legacy command (deprecated - now a no-op)
+bd sync                                                # DEPRECATED: Use bd dolt push instead
 ```
+
+> **v0.56 Breaking Change:** The JSONL-based sync pipeline (`bd sync`, git-portable mode) has been completely removed. Dolt-native push/pull via git remotes is the only sync mechanism.
+
+## Dolt Server Management
+
+```bash
+# Server lifecycle
+bd dolt start                                          # Start Dolt SQL server
+bd dolt stop                                           # Stop Dolt SQL server
+
+# Commit data
+bd dolt commit -m "Session work"                       # Commit pending changes
+bd dolt commit --stdin                                 # Multi-line commit message from stdin
+
+# Push/pull
+bd dolt push                                           # Push to Dolt remote
+```
+
+> **v0.56+:** Beads requires a running Dolt SQL server. The embedded Dolt driver has been removed. Use `bd dolt start` or `dolt sql-server` to run the server.
+
+### SQL Access
+
+```bash
+# Raw SQL queries against the database
+bd sql "SELECT * FROM issues WHERE status = 'open'"    # Direct SQL access
+bd sql "SELECT * FROM issues" --format json            # JSON output
+bd sql "SELECT * FROM issues" --format csv             # CSV output
+```
+
+### Graph Visualization
+
+```bash
+bd graph <id>                                          # Terminal-native horizontal DAG
+bd graph <id> --dot                                    # DOT format export
+bd graph <id> --html                                   # Interactive HTML export
+bd graph <id> --box                                    # Legacy box view
+```
+
+## Graph Links
+
+```bash
+# Relate issues (bidirectional "see also")
+bd relate <id1> <id2>                                  # Link two related issues
+bd unrelate <id1> <id2>                                # Remove relationship
+
+# Mark duplicates
+bd duplicate <dup-id> --of <canonical-id>              # Mark as duplicate
+bd duplicates                                          # Show all duplicates
+bd duplicates --auto-merge                             # Auto-merge all duplicates
+
+# Supersede (version chains)
+bd supersede <old-id> --with <new-id>                  # Old auto-closed
+```
+
+See [GRAPH_LINKS.md](GRAPH_LINKS.md) for decision tree and best practices.
+
+## Messaging
+
+```bash
+# Send and receive messages
+bd mail send <recipient> -s "Subject" -m "Body"        # Send message
+bd mail inbox                                          # Check inbox
+bd mail read <msg-id>                                  # Read a message
+bd mail reply <msg-id> -m "Reply body"                 # Reply to thread
+
+# View message threads
+bd show <msg-id> --thread                              # Full conversation thread
+```
+
+See [MESSAGING.md](MESSAGING.md) for setup and architecture.
 
 ## Issue Types
 
@@ -564,6 +636,8 @@ bd sync
 - `task` - Work item (tests, docs, refactoring)
 - `epic` - Large feature composed of multiple issues (supports hierarchical children)
 - `chore` - Maintenance work (dependencies, tooling)
+- `decision` - Architectural or design decision record
+- `message` - Inter-agent or human-agent communication (see Messaging)
 
 **Hierarchical children:** Epics can have child issues with dotted IDs (e.g., `bd-a3f8e9.1`, `bd-a3f8e9.2`). Children are auto-numbered sequentially. Up to 3 levels of nesting supported.
 
@@ -583,6 +657,13 @@ bd sync
 - `discovered-from` - Track issues discovered during work
 
 Only `blocks` dependencies affect the ready work queue.
+
+### Graph Link Types (non-blocking)
+
+- `relates_to` - Bidirectional "see also" (`bd relate`)
+- `replies_to` - Message threading (`bd mail reply`)
+- `duplicate_of` - Points to canonical issue (`bd duplicate`)
+- `superseded_by` - Points to replacement issue (`bd supersede`)
 
 **Note:** When creating an issue with a `discovered-from` dependency, the new issue automatically inherits the parent's `source_repo` field.
 
@@ -676,10 +757,10 @@ bd update bd-42 --status in_progress --json
 # ... work ...
 
 # End of session (IMPORTANT!)
-bd sync  # Force immediate sync, bypass debounce
+bd dolt push  # Push changes to Dolt remote
 ```
 
-**ALWAYS run `bd sync` at end of agent sessions** to ensure changes are committed/pushed immediately.
+**ALWAYS run `bd dolt push` at end of agent sessions** to ensure changes are committed/pushed immediately.
 
 ## See Also
 

@@ -9,6 +9,8 @@ This skill teaches Claude Code how to use bd effectively for:
 - **Dependency management** - Graph-based issue relationships
 - **Session handoff** - Writing notes that survive context resets
 - **Molecules and wisps** (v0.34.0+) - Reusable work templates and ephemeral workflows
+- **Messaging** (v0.30.0+) - Inter-agent communication and mail threading
+- **Graph links** (v0.30.0+) - Relate, supersede, and deduplicate issues
 
 ## Installation
 
@@ -54,6 +56,8 @@ beads/
     ├── AGENTS.md            # Agent bead tracking (v0.40+)
     ├── ASYNC_GATES.md       # Human-in-the-loop gates
     ├── CHEMISTRY_PATTERNS.md # Mol vs Wisp decision tree
+    ├── MESSAGING.md         # Inter-agent messaging system (v0.30+)
+    ├── GRAPH_LINKS.md       # Graph links: relate, supersede, duplicate (v0.30+)
     └── WORKTREES.md         # Parallel development patterns
 ```
 
@@ -92,19 +96,22 @@ NEXT: Implement rate limiting"
 ## Requirements
 
 - [bd CLI](https://github.com/steveyegge/beads) installed (`brew install beads`)
-- A git repository (bd requires git for sync)
+- **Dolt SQL server** running (`bd dolt start` or `dolt sql-server`)
+- A git repository (bd requires git for persistence)
 - Initialized database (`bd init` in project root)
 
 ## Version Compatibility
 
 | Version | Features |
 |---------|----------|
+| v0.56.0+ | Dolt-only backend, wisps in Dolt table, messaging, graph links, `bd dolt *` commands |
+| v0.50.0+ | Dolt as default backend, `bd sql`, `bd graph`, `decision` type |
 | v0.47.0+ | Pull-first sync, resolve-conflicts, dry-run create, gate auto-discovery |
 | v0.43.0+ | Full support: agents, gates, worktrees, chemistry patterns |
 | v0.40.0+ | Agent beads, async gates, worktree management |
 | v0.34.0+ | Molecules, wisps, cross-project dependencies |
+| v0.30.0+ | Messaging, graph links (relates_to, supersedes, duplicate_of) |
 | v0.15.0+ | Core: dependencies, notes, status tracking |
-| Earlier | Basic functionality, some features missing |
 
 ## Contributing
 

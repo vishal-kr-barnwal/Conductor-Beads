@@ -21,8 +21,8 @@ Beads uses a chemistry metaphor for work templates. This guide covers when and h
 │   bd pour       │       │       │  bd wisp create │
 │                 │       │       │                 │
 │  Persistent     │       │       │  Ephemeral      │
-│  .beads/        │       │       │  .beads-wisp/   │
-│  Git synced     │       │       │  Gitignored     │
+│  .beads/        │       │       │  Dolt wisps tbl │
+│  Git synced     │       │       │  dolt_ignore    │
 └────────┬────────┘       │       └────────┬────────┘
          │                │                │
          │                │        ┌───────┴───────┐
@@ -180,7 +180,7 @@ bd mol catalog
 |------|----------|--------------|
 | Proto | `.beads/` | Synced (template label) |
 | Mol | `.beads/` | Synced |
-| Wisp | `.beads-wisp/` | Gitignored |
+| Wisp | Dolt `wisps` table | `dolt_ignore` (excluded from sync) |
 
 ## Anti-Patterns
 
