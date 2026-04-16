@@ -152,7 +152,7 @@ Display:
 
 2. **Save Context to Beads with Full Structure:**
    ```bash
-   bd update <epic_id> --notes "COMPLETED: Tasks 1-N (<progress>% of track)
+   bd note <epic_id> "COMPLETED: Tasks 1-N (<progress>% of track)"
    KEY DECISIONS: [list major decisions from this section]
    IN PROGRESS: <current_task>
    NEXT: <next_task>
@@ -172,7 +172,7 @@ Display:
 3. **Parallel Workers Handoff (if parallel_state.json exists):**
    - For each active parallel worker, save Beads context:
      ```bash
-     bd update <worker_beads_task_id> --notes "HANDOFF: Worker <id> state saved
+     bd note <worker_beads_task_id> "HANDOFF: Worker <id> state saved"
      STATUS: <in_progress|completed|pending>
      FILES_OWNED: <exclusive files>
      PROGRESS: <description of work done>
@@ -180,7 +180,7 @@ Display:
      ```
    - Include parallel state summary in epic notes:
      ```bash
-     bd update <epic_id> --notes "...
+     bd note <epic_id> "... (see handoff summary)"
      PARALLEL_STATE: <N> workers, <M> completed, <K> in progress
      WORKERS: <list of worker_ids and their status>" --json
      ```

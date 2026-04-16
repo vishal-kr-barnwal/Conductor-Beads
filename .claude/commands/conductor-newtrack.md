@@ -329,17 +329,17 @@ Create a new track for: $ARGUMENTS
    - Parse `plan.md` for phases and tasks
    - For each phase:
      ```bash
-     bd create "<phase_name>" --parent <epic_id> --json
+     bd create "<phase_name>" -t milestone --parent <epic_id> --json
      ```
    - For each task in phase:
      ```bash
      bd create "<task_description>" \
+       -t story \
        --parent <phase_id> \
        --design "<task technical notes>" \
        --acceptance "<task done criteria>" \
        --json
      ```
-
 4. **Set Up Dependencies:**
    - **Phase-level dependencies (CRITICAL - depends on annotations):**
      - **If phase has NO `<!-- depends: -->` annotation (default):**
@@ -382,7 +382,7 @@ Create a new track for: $ARGUMENTS
 8. **Parallel Execution Notes (if parallel enabled):**
    - For each task in a parallel phase, add file ownership to Beads notes:
      ```bash
-     bd update <task_id> --notes "PARALLEL_ENABLED: true
+     bd note <task_id> "PARALLEL_ENABLED: true"
      FILES_OWNED: <comma-separated file list from <!-- files: --> annotation>
      DEPENDS_ON: <task dependencies from <!-- depends: --> annotation>" --json
      ```

@@ -240,7 +240,7 @@ Implement track: $ARGUMENTS
                - Set commit_sha to your commit hash
                - Set completed_at to current timestamp
             6. If Beads enabled:
-               - bd update <beads_task_id> --notes 'COMPLETED: <description>
+               bd note <beads_task_id> 'COMPLETED: <description>'
                  COMMIT: <sha>
                  FILES CHANGED: <list>' --json
                - bd close <beads_task_id> --continue --reason 'Task completed' --json
@@ -291,7 +291,7 @@ Implement track: $ARGUMENTS
         ```bash
         bd dolt push
         bd ready --epic <epic_id> --json  # Verify all complete
-        bd update <epic_id> --notes "PARALLEL PHASE COMPLETE: <phase>
+        bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>"
         WORKERS: <N> succeeded
         COMMITS: <sha_list>" --json
         ```
@@ -331,7 +331,7 @@ Implement track: $ARGUMENTS
                - If found:
                  - Add structured completion notes:
                    ```bash
-                   bd update <beads_task_id> --notes "COMPLETED: <description>
+                   bd note <beads_task_id> 'COMPLETED: <description>'
                    COMMIT: <sha_7chars>
                    FILES CHANGED: <list>
                    KEY DECISION: <if any>"
@@ -359,7 +359,7 @@ Implement track: $ARGUMENTS
         - Reset `current_task_index` to 0
         - **If `beads_enabled` is true:** Update epic notes for compaction survival:
           ```bash
-          bd update <epic_id> --notes "COMPLETED: Phase N - <phase_name>
+          bd note <epic_id> "COMPLETED: Phase N - <phase_name>"
           IN PROGRESS: Phase N+1 - <next_phase>
           NEXT: <first_task_of_next_phase>
           KEY DECISIONS: <major decisions made this phase>"

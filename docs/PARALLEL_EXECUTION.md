@@ -380,7 +380,7 @@ for task in parallel_tasks:
 # 3. After all workers complete - aggregate and verify
 bd sync  # Force sync all changes
 bd ready --epic <epic_id> --json  # Verify all complete
-bd update <epic_id> --notes "PARALLEL PHASE COMPLETE: <phase>
+bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>
 WORKERS: <N> succeeded
 COMMITS: <sha_list>" --json
 ```
@@ -389,7 +389,7 @@ COMMITS: <sha_list>" --json
 
 ```bash
 # At worker start (claimed by coordinator already)
-bd update <beads_task_id> --notes "WORKER: <worker_id>
+bd note <beads_task_id> "WORKER: <worker_id>
 TASK: <task_description>
 FILES: <exclusive_files>
 STARTED: <timestamp>" --json
@@ -402,7 +402,7 @@ bd create "Found race condition" \
   --json
 
 # At worker completion
-bd update <beads_task_id> --notes "COMPLETED: commit <sha>
+bd note <beads_task_id> "COMPLETED: commit <sha>
 DURATION: <time>
 FILES_MODIFIED: <list>" --json
 bd close <beads_task_id> --reason "Task completed" --json

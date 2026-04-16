@@ -258,21 +258,20 @@ Shows:
 
 ### Essential Beads Commands
 
-> **v0.56+:** Beads requires a Dolt SQL server. Start with `bd dolt start` before using commands.
+> **v1.0.2:** Beads uses embedded Dolt by default. No external server (`bd dolt start`) is required.
 
 | Command | Description |
 |---------|-------------|
 | `bd prime` | Load AI-optimized workflow context (run first!) |
 | `bd ready` | List tasks with no blockers |
-| `bd create "Title" -p 0` | Create a P0 (highest priority) task |
+| `bd create "Title" -t story -p 0` | Create a P0 story (highest priority) |
 | `bd create "Bug" --deps discovered-from:<id>` | Create and link discovered work |
 | `bd show <id>` | View task details, notes, and context |
 | `bd close <id> --continue` | Complete task and auto-advance to next |
-| `bd update <id> --notes "context"` | Add notes for session resume |
+| `bd note <id> "context"` | Add notes for session resume |
 | `bd dep add <child> <parent>` | Add dependency between tasks |
 | `bd relate <id1> <id2>` | Link related issues (bidirectional) |
 | `bd dolt push` | Push to Dolt remote (use at session end) |
-| `bd dolt start` | Start Dolt SQL server (required v0.56+) |
 
 ### Molecule Commands (v0.34+)
 

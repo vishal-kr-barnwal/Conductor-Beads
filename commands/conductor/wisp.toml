@@ -115,9 +115,9 @@ bd mol wisp <formula_name> [--var key=value ...] --json
 
 If no formula specified and user describes exploration:
 
-1. **Create Quick Exploration Epic:**
+1. **Create Quick Exploration Spike:**
    ```bash
-   bd create "Exploration: <user_description>" -t epic -p 3 --json
+   bd create "Exploration: <user_description>" -t spike -p 3 --json
    ```
 
 2. **Create as Wisp:**

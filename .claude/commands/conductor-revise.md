@@ -114,7 +114,7 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
        --json
      ```
    - REMOVED tasks: `bd close <task_id> --reason "Removed in revision #N: <reason>"`
-   - MODIFIED tasks: `bd update <task_id> --notes "REVISED: <what changed and why>"`
+   - MODIFIED tasks: `bd note <task_id> "REVISED: <what changed and why>"`
    - **If any `bd` command fails:**
      > "⚠️ Beads command failed: <error message>"
      > "A) Continue without Beads sync"
@@ -126,7 +126,7 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
 
 3. **Add Revision Note to Epic:**
    ```bash
-   bd update <epic_id> --notes "REVISION #N: <summary of changes>
+   bd note <epic_id> "REVISION #N: <summary of changes>"
    REASON: <why revision was needed>
    IMPACT: +X tasks added, -Y tasks removed, ~Z modified
    KEY DECISION: <if any major decisions made during revision>"
@@ -144,16 +144,17 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
    **Task-Level Parallel Config:**
    - For NEW parallel tasks: Add file ownership notes:
      ```bash
-     bd update <new_task_id> --notes "PARALLEL_ENABLED: true
+     bd note <new_task_id> "PARALLEL_ENABLED: true"
      FILES_OWNED: <comma-separated file list>
      DEPENDS_ON: <task dependencies>" --json
      ```
    - For MODIFIED parallel annotations (files/depends changed):
      ```bash
-     bd update <task_id> --notes "REVISED: Parallel config changed
+     bd note <task_id> "REVISED: Parallel config changed"
      FILES_OWNED: <new file list>
      DEPENDS_ON: <new dependencies>" --json
      ```
    - If parallel phase changed to sequential (or vice versa):
      - Clear/set `PARALLEL_ENABLED` in task notes
      - Clear assignees if reverting to sequential: `bd update <id> --assignee "" --json`
+

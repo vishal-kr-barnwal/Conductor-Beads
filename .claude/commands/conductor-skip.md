@@ -48,9 +48,9 @@ Confirm skip and show next task.
    - "Will complete later": 
      ```bash
      bd update <task_id> --status open
-     bd update <task_id> --notes "SKIPPED: <reason>. Will complete later."
+     bd note <task_id> "SKIPPED: <reason>. Will complete later."
      ```
-   - "Blocked": `bd update <task_id> --status blocked --notes "SKIPPED: <reason>"`
+   - "Blocked": `bd update <task_id> --status blocked && bd note <task_id> "SKIPPED: <reason>"`
    - **If any `bd` command fails:**
      > "⚠️ Beads command failed: <error message>"
      > "A) Continue without Beads sync"
@@ -61,3 +61,4 @@ Confirm skip and show next task.
      - If C: HALT and wait for user
 
 3. **Update next task:** `bd update <next_task_id> --status in_progress --assignee conductor`
+ --assignee conductor`

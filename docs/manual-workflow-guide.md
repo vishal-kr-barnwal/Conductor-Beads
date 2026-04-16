@@ -775,7 +775,7 @@ When Beads integration is enabled, use these commands alongside Conductor:
 | `bd show <id>` | View task details and notes |
 | `bd show <id> --notes` | View notes (survives compaction) |
 | `bd update <id> --status in_progress` | Start working on task |
-| `bd update <id> --notes "Progress..."` | Add progress notes |
+| `bd note <id> "Progress..."` | Add progress notes |
 | `bd close <id> --continue` | Complete task and auto-advance |
 | `bd create "Bug" --deps discovered-from:<id>` | Create and link discovered work |
 | `bd dep add <child> <parent>` | Add dependency |

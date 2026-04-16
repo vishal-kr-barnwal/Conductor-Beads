@@ -1,7 +1,7 @@
 # CLI Command Reference
 
 **For:** AI agents and developers using bd command-line interface
-**Version:** 0.56.0+
+**Version:** 1.0.2
 
 ## Quick Navigation
 
@@ -13,7 +13,6 @@
 - [Visualization](#visualization)
 - [Advanced Operations](#advanced-operations)
 - [Database Management](#database-management)
-- [Dolt Server Management](#dolt-server-management)
 - [Graph Links](#graph-links)
 - [Messaging](#messaging)
 
@@ -83,7 +82,7 @@ bd info --json
 # {
 #   "database_path": "/path/to/.beads/beads.db",
 #   "issue_prefix": "bd",
-#   "server_running": true
+#   "embedded": true
 # }
 ```
 
@@ -92,13 +91,13 @@ bd info --json
 ```bash
 # Find ready work (no blockers)
 bd ready --json
-bd list --ready --json                        # Same, integrated into list (v0.47.1+)
+bd list --ready --json                        # Same, integrated into list
 
 # Find blocked work
 bd blocked --json                             # Show all blocked issues
 bd blocked --parent bd-epic --json            # Blocked descendants of epic
 
-# Find molecules waiting on gates for resume (v0.47.0+)
+# Find molecules waiting on gates for resume
 bd ready --gated --json                       # Gate-resume discovery
 
 # Find stale issues (not updated recently)
@@ -114,14 +113,14 @@ bd stale --limit 20 --json                   # Limit results
 ```bash
 # Basic creation
 # IMPORTANT: Always quote titles and descriptions with double quotes
-bd create "Issue title" -t bug|feature|task -p 0-4 -d "Description" --json
+bd create "Issue title" -t story|spike|bug|task -p 0-4 -d "Description" --json
 
 # Create with explicit ID (for parallel workers)
 bd create "Issue title" --id worker1-100 -p 1 --json
 
 # Create with labels (--labels or --label work)
-bd create "Issue title" -t bug -p 1 -l bug,critical --json
-bd create "Issue title" -t bug -p 1 --label bug,critical --json
+bd create "Issue title" -t story -p 1 -l bug,critical --json
+bd create "Issue title" -t story -p 1 --label bug,critical --json
 
 # Examples with special characters (all require quoting):
 bd create "Fix: auth doesn't validate tokens" -t bug -p 1 --json
@@ -132,19 +131,18 @@ bd create -f feature-plan.md --json
 
 # Create epic with hierarchical child tasks
 bd create "Auth System" -t epic -p 1 --json         # Returns: bd-a3f8e9
-bd create "Login UI" -p 1 --json                     # Auto-assigned: bd-a3f8e9.1
-bd create "Backend validation" -p 1 --json           # Auto-assigned: bd-a3f8e9.2
-bd create "Tests" -p 1 --json                        # Auto-assigned: bd-a3f8e9.3
+bd create "Phase 1" -t milestone --parent bd-a3f8e9 --json # Returns: bd-a3f8e9.1
+bd create "Login UI" -t story --parent bd-a3f8e9.1 --json  # Auto-assigned: bd-a3f8e9.1.1
 
 # Create and link discovered work (one command)
 bd create "Found bug" -t bug -p 1 --deps discovered-from:<parent-id> --json
 
-# Create with external reference (v0.9.2+)
+# Create with external reference
 bd create "Fix login" -t bug -p 1 --external-ref "gh-123" --json  # Short form
 bd create "Fix login" -t bug -p 1 --external-ref "https://github.com/org/repo/issues/123" --json  # Full URL
 bd create "Jira task" -t task -p 1 --external-ref "jira-PROJ-456" --json  # Custom prefix
 
-# Preview creation without side effects (v0.47.0+)
+# Preview creation without side effects
 bd create "Issue title" -t task -p 1 --dry-run --json  # Shows what would be created
 ```
 
@@ -168,18 +166,26 @@ bd q "Task" | xargs bd show                   # Pipe to other commands
 bd update <id> [<id>...] --status in_progress --json
 bd update <id> [<id>...] --priority 1 --json
 
-# Update external reference (v0.9.2+)
+# Update external reference
 bd update <id> --external-ref "gh-456" --json           # Short form
 bd update <id> --external-ref "jira-PROJ-789" --json    # Custom prefix
 
 # Edit issue fields in $EDITOR (HUMANS ONLY - not for agents)
-# NOTE: This command is intentionally NOT exposed via the MCP server
-# Agents should use 'bd update' with field-specific parameters instead
 bd edit <id>                    # Edit description
 bd edit <id> --title            # Edit title
 bd edit <id> --design           # Edit design notes
 bd edit <id> --notes            # Edit notes
 bd edit <id> --acceptance       # Edit acceptance criteria
+```
+
+### Note Shorthand (v1.0.0+)
+
+```bash
+# Add a note to an issue (replaces bd update --notes)
+bd note <id> "This is a progress note"
+bd note <id> -f notes.txt                      # From file
+bd note <id> "Multi-line
+note content" --json
 ```
 
 ### Close/Reopen Issues
@@ -362,7 +368,7 @@ Global flags work with any bd command and must appear **before** the subcommand.
 
 ### Sandbox Mode
 
-**Auto-detection (v0.21.1+):** bd automatically detects sandboxed environments and enables sandbox mode.
+**Auto-detection (v1.0.0+):** bd automatically detects sandboxed environments and enables sandbox mode.
 
 When detected, you'll see: `Sandbox detected, using embedded mode`
 
@@ -371,29 +377,18 @@ When detected, you'll see: `Sandbox detected, using embedded mode`
 ```bash
 # Explicitly enable sandbox mode
 bd --sandbox <command>
-
-# Equivalent to combining these flags:
-bd --no-auto-flush --no-auto-import <command>
 ```
 
 **What it does:**
-- Uses embedded mode (direct database access, no Dolt server needed)
+- Uses embedded mode (direct database access)
 - Disables auto-sync operations
-
-**When to use:** Sandboxed environments where the Dolt server can't be controlled (permission restrictions), or when auto-detection doesn't trigger.
 
 ### Staleness Control
 
 ```bash
 # Skip staleness check (emergency escape hatch)
 bd --allow-stale <command>
-
-# Example: access database even if it appears out of sync
-bd --allow-stale ready --json
-bd --allow-stale list --status open --json
 ```
-
-**Shows:** `⚠️  Staleness check skipped (--allow-stale), data may be out of sync`
 
 **⚠️ Caution:** May show stale or incomplete data. Use only when stuck and other options fail.
 
@@ -404,17 +399,13 @@ bd --allow-stale list --status open --json
 bd import --force -i .beads/issues.jsonl
 ```
 
-**When to use:** `bd import` reports "0 created, 0 updated" but staleness errors persist.
-
-**Shows:** `Metadata updated (database already in sync)`
-
 ### Other Global Flags
 
 ```bash
 # JSON output for programmatic use
 bd --json <command>
 
-# Force embedded mode (bypass Dolt server)
+# Force embedded mode
 bd --embedded <command>
 
 # Disable auto-sync
@@ -427,9 +418,6 @@ bd --db /path/to/.beads/beads.db <command>
 # Custom actor for audit trail
 bd --actor alice <command>
 ```
-
-**See also:**
-- [TROUBLESHOOTING.md - Sandboxed environments](TROUBLESHOOTING.md#sandboxed-environments-codex-claude-code-etc) for detailed sandbox troubleshooting
 
 ## Advanced Operations
 
@@ -466,12 +454,9 @@ bd admin compact --apply --id bd-42 --summary summary.txt   # Apply compaction
 bd admin compact --apply --id bd-42 --summary - < summary.txt  # From stdin
 bd admin compact --stats --json                             # Show statistics
 
-# Legacy AI-powered compaction (requires ANTHROPIC_API_KEY)
-bd admin compact --auto --dry-run --all                     # Preview
-bd admin compact --auto --all --tier 1                      # Auto-compact tier 1
-
-# Restore compacted issue from git history
-bd restore <id>  # View full history at time of compaction
+# Rules compaction (v1.0.0+)
+bd rules audit                                              # Scan .claude/rules/ for bloat
+bd rules compact --auto                                     # Automatically merge rule groups
 ```
 
 ### Rename Prefix
@@ -493,30 +478,11 @@ bd import -i .beads/issues.jsonl                # Import and update issues
 bd import -i .beads/issues.jsonl --dedupe-after # Import + detect duplicates
 
 # Handle missing parents during import
-bd import -i issues.jsonl --orphan-handling allow      # Default: import orphans without validation
-bd import -i issues.jsonl --orphan-handling resurrect  # Auto-resurrect deleted parents as tombstones
-bd import -i issues.jsonl --orphan-handling skip       # Skip orphans with warning
+bd import -i issues.jsonl --orphan-handling allow      # Default: import orphans
+bd import -i issues.jsonl --orphan-handling resurrect  # Recreate deleted parents
+bd import -i issues.jsonl --orphan-handling skip       # Skip orphans
 bd import -i issues.jsonl --orphan-handling strict     # Fail if parent is missing
-
-# Configure default orphan handling behavior
-bd config set import.orphan_handling "resurrect"
-bd dolt push  # Now uses resurrect mode by default
 ```
-
-**Orphan handling modes:**
-
-- **`allow` (default)** - Import orphaned children without parent validation. Most permissive, ensures no data loss even if hierarchy is temporarily broken.
-- **`resurrect`** - Search history for deleted parents and recreate them as tombstones (Status=Closed, Priority=4). Preserves hierarchy with minimal data. Dependencies are also resurrected on best-effort basis.
-- **`skip`** - Skip orphaned children with warning. Partial import succeeds but some issues are excluded.
-- **`strict`** - Fail import immediately if a child's parent is missing. Use when database integrity is critical.
-
-**When to use:**
-- Use `allow` (default) for daily imports and auto-sync
-- Use `resurrect` when importing from databases with deleted parents
-- Use `strict` for controlled imports requiring guaranteed parent existence
-- Use `skip` rarely - only for selective imports
-
-See [CONFIG.md](CONFIG.md#example-import-orphan-handling) and [TROUBLESHOOTING.md](TROUBLESHOOTING.md#import-fails-with-missing-parent-errors) for more details.
 
 ### Migration
 
@@ -525,58 +491,28 @@ See [CONFIG.md](CONFIG.md#example-import-orphan-handling) and [TROUBLESHOOTING.m
 bd migrate                                             # Detect and migrate old databases
 bd migrate --dry-run                                   # Preview migration
 bd migrate --cleanup --yes                             # Migrate and remove old files
-
-# AI-supervised migration (check before running bd migrate)
-bd migrate --inspect --json                            # Show migration plan for AI agents
-bd info --schema --json                                # Get schema, tables, config, sample IDs
 ```
-
-**Migration workflow for AI agents:**
-
-1. Run `--inspect` to see pending migrations and warnings
-2. Check for `missing_config` (like issue_prefix)
-3. Review `invariants_to_check` for safety guarantees
-4. If warnings exist, fix config issues first
-5. Then run `bd migrate` safely
-
-**Migration safety invariants:**
-
-- **required_config_present**: Ensures issue_prefix and schema_version are set
-- **foreign_keys_valid**: No orphaned dependencies or labels
-- **issue_count_stable**: Issue count doesn't decrease unexpectedly
-
-These invariants prevent data loss and would have caught issues like GH #201 (missing issue_prefix after migration).
 
 ### Sync Operations
 
 ```bash
-# Dolt-native sync (replaces legacy bd sync)
+# Dolt-native sync
 bd dolt push                                           # Push to Dolt remote
+bd dolt pull                                           # Pull from Dolt remote
 bd dolt commit -m "message"                            # Commit pending changes
-bd dolt commit --stdin                                 # Multi-line commit from stdin
-
-# Legacy command (deprecated - now a no-op)
-bd sync                                                # DEPRECATED: Use bd dolt push instead
 ```
 
-> **v0.56 Breaking Change:** The JSONL-based sync pipeline (`bd sync`, git-portable mode) has been completely removed. Dolt-native push/pull via git remotes is the only sync mechanism.
+> **v1.0.0:** Legacy `bd sync` is deprecated. Use `bd dolt push/pull`.
 
 ## Dolt Server Management
 
+> **v1.0.0:** Native builds use **Embedded Dolt** by default. No external server is required. `bd dolt start` is only needed if you specifically want to expose the DB via SQL port.
+
 ```bash
-# Server lifecycle
+# Optional: Expose via SQL port
 bd dolt start                                          # Start Dolt SQL server
 bd dolt stop                                           # Stop Dolt SQL server
-
-# Commit data
-bd dolt commit -m "Session work"                       # Commit pending changes
-bd dolt commit --stdin                                 # Multi-line commit message from stdin
-
-# Push/pull
-bd dolt push                                           # Push to Dolt remote
 ```
-
-> **v0.56+:** Beads requires a running Dolt SQL server. The embedded Dolt driver has been removed. Use `bd dolt start` or `dolt sql-server` to run the server.
 
 ### SQL Access
 
@@ -584,16 +520,6 @@ bd dolt push                                           # Push to Dolt remote
 # Raw SQL queries against the database
 bd sql "SELECT * FROM issues WHERE status = 'open'"    # Direct SQL access
 bd sql "SELECT * FROM issues" --format json            # JSON output
-bd sql "SELECT * FROM issues" --format csv             # CSV output
-```
-
-### Graph Visualization
-
-```bash
-bd graph <id>                                          # Terminal-native horizontal DAG
-bd graph <id> --dot                                    # DOT format export
-bd graph <id> --html                                   # Interactive HTML export
-bd graph <id> --box                                    # Legacy box view
 ```
 
 ## Graph Links
@@ -612,8 +538,6 @@ bd duplicates --auto-merge                             # Auto-merge all duplicat
 bd supersede <old-id> --with <new-id>                  # Old auto-closed
 ```
 
-See [GRAPH_LINKS.md](GRAPH_LINKS.md) for decision tree and best practices.
-
 ## Messaging
 
 ```bash
@@ -622,149 +546,33 @@ bd mail send <recipient> -s "Subject" -m "Body"        # Send message
 bd mail inbox                                          # Check inbox
 bd mail read <msg-id>                                  # Read a message
 bd mail reply <msg-id> -m "Reply body"                 # Reply to thread
-
-# View message threads
-bd show <msg-id> --thread                              # Full conversation thread
 ```
-
-See [MESSAGING.md](MESSAGING.md) for setup and architecture.
 
 ## Issue Types
 
 - `bug` - Something broken that needs fixing
 - `feature` - New functionality
 - `task` - Work item (tests, docs, refactoring)
-- `epic` - Large feature composed of multiple issues (supports hierarchical children)
-- `chore` - Maintenance work (dependencies, tooling)
+- `story` - User story (v1.0.0+)
+- `spike` - Exploratory research (v1.0.0+)
+- `milestone` - Project phase/milestone (v1.0.0+)
+- `epic` - Large feature composed of multiple issues
 - `decision` - Architectural or design decision record
-- `message` - Inter-agent or human-agent communication (see Messaging)
+- `message` - Inter-agent or human-agent communication
 
-**Hierarchical children:** Epics can have child issues with dotted IDs (e.g., `bd-a3f8e9.1`, `bd-a3f8e9.2`). Children are auto-numbered sequentially. Up to 3 levels of nesting supported.
+**Hierarchical children:** Epics can have milestones, which can have stories/tasks. Up to 3 levels of nesting supported.
 
 ## Priorities
 
-- `0` - Critical (security, data loss, broken builds)
-- `1` - High (major features, important bugs)
-- `2` - Medium (nice-to-have features, minor bugs)
-- `3` - Low (polish, optimization)
-- `4` - Backlog (future ideas)
+- `0` - Critical
+- `1` - High
+- `2` - Medium
+- `3` - Low
+- `4` - Backlog
 
 ## Dependency Types
 
-- `blocks` - Hard dependency (issue X blocks issue Y)
-- `related` - Soft relationship (issues are connected)
-- `parent-child` - Epic/subtask relationship
-- `discovered-from` - Track issues discovered during work
-
-Only `blocks` dependencies affect the ready work queue.
-
-### Graph Link Types (non-blocking)
-
-- `relates_to` - Bidirectional "see also" (`bd relate`)
-- `replies_to` - Message threading (`bd mail reply`)
-- `duplicate_of` - Points to canonical issue (`bd duplicate`)
-- `superseded_by` - Points to replacement issue (`bd supersede`)
-
-**Note:** When creating an issue with a `discovered-from` dependency, the new issue automatically inherits the parent's `source_repo` field.
-
-## External References
-
-The `--external-ref` flag (v0.9.2+) links beads issues to external trackers:
-
-- Supports short form (`gh-123`) or full URL (`https://github.com/...`)
-- Portable via Dolt - survives sync across machines
-- Custom prefixes work for any tracker (`jira-PROJ-456`, `linear-789`)
-
-## Output Formats
-
-### JSON Output (Recommended for Agents)
-
-Always use `--json` flag for programmatic use:
-
-```bash
-# Single issue
-bd show bd-42 --json
-
-# List of issues
-bd ready --json
-
-# Operation result
-bd create "Issue" -p 1 --json
-```
-
-### Human-Readable Output
-
-Default output without `--json`:
-
-```bash
-bd ready
-# bd-42  Fix authentication bug  [P1, bug, in_progress]
-# bd-43  Add user settings page  [P2, feature, open]
-```
-
-## Common Patterns for AI Agents
-
-### Claim and Complete Work
-
-```bash
-# 1. Find available work
-bd ready --json
-
-# 2. Claim issue
-bd update bd-42 --status in_progress --json
-
-# 3. Work on it...
-
-# 4. Close when done
-bd close bd-42 --reason "Implemented and tested" --json
-```
-
-### Discover and Link Work
-
-```bash
-# While working on bd-100, discover a bug
-
-# Old way (two commands):
-bd create "Found auth bug" -t bug -p 1 --json  # Returns bd-101
-bd dep add bd-101 bd-100 --type discovered-from
-
-# New way (one command):
-bd create "Found auth bug" -t bug -p 1 --deps discovered-from:bd-100 --json
-```
-
-### Batch Operations
-
-```bash
-# Update multiple issues at once
-bd update bd-41 bd-42 bd-43 --priority 0 --json
-
-# Close multiple issues
-bd close bd-41 bd-42 bd-43 --reason "Batch completion" --json
-
-# Add label to multiple issues
-bd label add bd-41 bd-42 bd-43 urgent --json
-```
-
-### Session Workflow
-
-```bash
-# Start of session
-bd ready --json  # Find work
-
-# During session
-bd create "..." -p 1 --json
-bd update bd-42 --status in_progress --json
-# ... work ...
-
-# End of session (IMPORTANT!)
-bd dolt push  # Push changes to Dolt remote
-```
-
-**ALWAYS run `bd dolt push` at end of agent sessions** to ensure changes are committed/pushed immediately.
-
-## See Also
-
-- [AGENTS.md](../AGENTS.md) - Main agent workflow guide
-- [GIT_INTEGRATION.md](GIT_INTEGRATION.md) - Git worktrees and protected branches
-- [LABELS.md](../LABELS.md) - Label system guide
-- [README.md](../README.md) - User documentation
+- `blocks` - Hard dependency
+- `related` - Soft relationship
+- `parent-child` - Hierarchy
+- `discovered-from` - Link to discovery context

@@ -5,7 +5,7 @@ description: >
   memory across conversation compaction. Use when work spans sessions, has blockers,
   or needs context recovery after compaction.
 allowed-tools: "Read,Bash(bd:*)"
-version: "0.56.1"
+version: "1.0.2"
 author: "Steve Yegge <https://github.com/steveyegge>"
 license: "MIT"
 ---
@@ -41,7 +41,7 @@ Graph-based issue tracker that survives conversation compaction. Provides persis
 ## Prerequisites
 
 ```bash
-bd --version  # Requires v0.56.0+
+bd --version  # Requires v1.0.0+
 ```
 
 - **bd CLI** installed and in PATH
@@ -53,16 +53,16 @@ bd --version  # Requires v0.56.0+
 **Run `bd prime`** for AI-optimized workflow context (auto-loaded by hooks).
 **Run `bd <command> --help`** for specific command usage.
 
-Essential commands: `bd ready`, `bd create`, `bd show`, `bd update`, `bd close`, `bd dolt push`
+Essential commands: `bd ready`, `bd create`, `bd show`, `bd update`, `bd note`, `bd close`, `bd dolt push`
 
-> **v0.56+:** Beads now requires a running Dolt SQL server. Start with `bd dolt start` before using bd commands.
+> **v1.0.0+:** Beads uses embedded Dolt by default on macOS and elsewhere. No running Dolt SQL server is required.
 
 ## Session Protocol
 
 1. `bd ready` — Find unblocked work
 2. `bd show <id>` — Get full context
 3. `bd update <id> --claim` — Claim and start work atomically
-4. Add notes as you work (critical for compaction survival)
+4. Add notes as you work (critical for compaction survival): `bd note <id> "..."`
 5. `bd close <id> --reason "..."` — Complete task
 6. `bd dolt push` — Push to Dolt remote (if configured)
 

@@ -146,7 +146,7 @@ Combined Workflow:
    - Refactor
 
 6. On completion, add structured notes:
-   bd update bd-a3f8.1 --notes "COMPLETED: JWT auth tests
+   bd note bd-a3f8.1 "COMPLETED: JWT auth tests
    KEY DECISION: RS256 over HS256 for key rotation
    FILES CHANGED: auth.test.ts, auth.ts
    COMMIT: abc123"
@@ -218,7 +218,7 @@ Beads' persistent notes survive conversation compaction, while Conductor's markd
 When updating notes for session resume, use this format:
 
 ```bash
-bd update <epic_id> --notes "COMPLETED: Phase 1 - Auth tests
+bd note <epic_id> "COMPLETED: Phase 1 - Auth tests
 KEY DECISION: Using RS256 for JWT signing (enables key rotation)
 IN PROGRESS: Phase 2 - Middleware implementation
 NEXT: Implement token validation
@@ -240,7 +240,7 @@ DISCOVERED: Found race condition in token refresh (created bd-xyz)"
 **CRITICAL**: Always run at session end or handoff:
 
 ```bash
-bd update <epic_id> --notes "..." # Save context
+bd note <epic_id> "..."           # Save context
 bd sync                           # Force sync to remote
 ```
 
@@ -256,7 +256,7 @@ This bypasses the 30-second debounce and ensures changes persist immediately.
 | `/conductor-status` | `bd ready`, `bd show` | Combine outputs, read notes for context |
 | `/conductor-block` | `bd update --status blocked` | Sync both with structured notes |
 | `/conductor-skip` | `bd close` or `bd update` | Mark in both based on skip reason |
-| `/conductor-handoff` | `bd update --notes`, `bd sync` | Save context + force sync |
+| `/conductor-handoff` | `bd note`, `bd sync` | Save context + force sync |
 | `/conductor-revert` | `bd reopen` | Sync status |
 | `/conductor-archive` | `bd compact --auto` | Archive track + compact |
 
@@ -404,7 +404,7 @@ bd create "Found race condition" \
 **At Worker Completion:**
 ```bash
 # Complete task with structured notes
-bd update <task_id> --notes "WORKER: <worker_id>
+bd note <task_id> "WORKER: <worker_id>
 STATUS: Completed
 COMMIT: <sha>
 DURATION: <time>
@@ -436,7 +436,7 @@ bd ready --epic <epic_id> --json
 # Should return empty (all tasks done) or only sequential tasks
 
 # Update epic notes for session resume
-bd update <epic_id> --notes "PARALLEL PHASE COMPLETE: <phase_name>
+bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase_name>
 WORKERS: <N> workers, all succeeded
 COMMITS: <list of commit SHAs>
 NEXT: <next_sequential_phase>" --json

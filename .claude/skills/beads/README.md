@@ -87,7 +87,7 @@ bd dep add implementation setup  # ✓ CORRECT
 When Claude's context gets compacted, conversation history is lost but bd state survives. Write notes as if explaining to a future Claude with zero context:
 
 ```bash
-bd update issue-123 --notes "COMPLETED: JWT auth with RS256
+bd note issue-123 "COMPLETED: JWT auth with RS256
 KEY DECISION: RS256 over HS256 for key rotation
 IN PROGRESS: Password reset flow
 NEXT: Implement rate limiting"
@@ -96,14 +96,15 @@ NEXT: Implement rate limiting"
 ## Requirements
 
 - [bd CLI](https://github.com/steveyegge/beads) installed (`brew install beads`)
-- **Dolt SQL server** running (`bd dolt start` or `dolt sql-server`)
-- A git repository (bd requires git for persistence)
-- Initialized database (`bd init` in project root)
+- **Git repository** (bd requires git for persistence)
+- **Initialized database** (`bd init` in project root)
+- **Embedded Dolt** (v1.0.0+ uses embedded Dolt by default; no server required)
 
 ## Version Compatibility
 
 | Version | Features |
 |---------|----------|
+| v1.0.0+ | Embedded Dolt by default, `bd note` command, macOS/Linux support |
 | v0.56.0+ | Dolt-only backend, wisps in Dolt table, messaging, graph links, `bd dolt *` commands |
 | v0.50.0+ | Dolt as default backend, `bd sql`, `bd graph`, `decision` type |
 | v0.47.0+ | Pull-first sync, resolve-conflicts, dry-run create, gate auto-discovery |

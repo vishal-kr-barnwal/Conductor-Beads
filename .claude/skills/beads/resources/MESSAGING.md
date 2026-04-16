@@ -21,7 +21,7 @@ Mail commands (`bd mail`) delegate to an external mail provider (typically `gt m
 |----------|---------------|-----|
 | Agent-to-agent coordination | Yes | Structured communication with threading |
 | Human approval requests | Consider gates instead | `bd gate` is purpose-built for approvals |
-| Status updates | No | Use `bd update --notes` instead |
+| Status updates | No | Use `bd note <id> "..."` instead |
 | Discussion on an issue | Yes | Thread replies to the issue |
 | Cross-session handoff notes | Consider either | Messages for communication, notes for context |
 

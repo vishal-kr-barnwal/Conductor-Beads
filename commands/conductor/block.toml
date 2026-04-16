@@ -34,7 +34,7 @@ Change `[~]` to `[!]` and append `[BLOCKED: reason]`
    - Run:
      ```bash
      bd update <task_id> --status blocked
-     bd update <task_id> --notes "BLOCKED: <reason>
+     bd note <task_id> "BLOCKED: <reason>"
      CATEGORY: <External/Technical/Resource>
      WAITING FOR: <what needs to happen to unblock>
      DISCOVERED: <if blocking issue is new, create with discovered-from>"
