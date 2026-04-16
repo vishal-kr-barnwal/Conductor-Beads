@@ -46,7 +46,10 @@ For tracks with parallel execution annotations:
 - Verify all tasks in parallel phases have `<!-- files: ... -->` annotation
 - Detect file conflicts (same file in multiple tasks)
 - Verify `<!-- depends: ... -->` references valid task IDs
-- If `parallel_state.json` exists, check for stale/orphan workers
+- Check `metadata.json` for `worktree_path` — verify the path exists on disk
+- Scan `.worktrees/<track_id>/` subdirectories — any worker dir not matching a live open Beads task (`bd ready --epic <id>`) = stale orphan
+- Check `git branch --list 'track/<track_id>/worker_*'` for orphan branches (branch exists but worktree was removed)
+- Report stale worktrees/branches as ❌ Errors (offer auto-cleanup in step 7)
 
 ## 6. Report
 
@@ -69,27 +72,15 @@ Offer to fix auto-fixable issues:
 
 **PROTOCOL: Include Beads consistency checks.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue validation without Beads checks"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability Check:**
+   - Run the standard Beads availability check (see `references/beads-error-handler.md`)
+   - If `BEADS_AVAILABLE=false`: skip this section silently
 
 2. **Verify Beads Integration:**
    - Task status sync between Beads and plan.md
    - No orphan epics/tasks
-   - Epic links valid in metadata.json
-   - **If any `bd` command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue validation without Beads checks"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - Epic links valid in `metadata.json`
+   - If any `bd` command fails: Follow Beads Error Handler Protocol (see `references/beads-error-handler.md`)
 
 3. **Add to Report:** Beads integration section with sync status
 

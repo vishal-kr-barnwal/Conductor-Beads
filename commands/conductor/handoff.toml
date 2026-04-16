@@ -11,21 +11,23 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 - Find track marked `[~]` in `conductor/tracks.md`
 - If no active track, ask user to specify or halt
 - Load `spec.md`, `plan.md`, and `implement_state.json`
-- Check for `parallel_state.json` (indicates parallel execution in progress)
+- Read `metadata.json` — check for `worktree_path` field (indicates parallel execution may be in progress)
 
 ## 1a. Parallel Execution Check
 
-If `parallel_state.json` exists:
-> "⚠️ This track has parallel workers currently running:"
-> [List workers and their status]
-> 
-> "A) Wait for workers to complete before handoff"
-> "B) Create handoff anyway (workers will continue)"
-> "C) Cancel handoff"
+If `metadata.json` has a `worktree_path` field:
+- Run `git worktree list` to check which worker worktrees are still active
+- If active worktrees exist:
+  > "⚠️ This track has parallel workers currently running:"
+  > [List active worktrees from `git worktree list`]
+  >
+  > "A) Wait for workers to complete before handoff"
+  > "B) Create handoff anyway (workers will continue in their worktrees)"
+  > "C) Cancel handoff"
 
-- If A: Monitor `parallel_state.json` until all complete, then proceed
-- If B: Include parallel state in handoff document
-- If C: HALT
+  - If A: Poll `bd ready --epic <epic_id>` until it returns empty (all tasks closed/blocked), then proceed
+  - If B: Include active worktree list and `bd show <epic_id>` notes in handoff document
+  - If C: HALT
 
 ## 2. Gather Handoff Context
 
@@ -75,8 +77,11 @@ Create `conductor/tracks/<track_id>/handoff_<YYYYMMDD_HHMMSS>.md` with:
 
 - **Header:** Track info, section number, timestamp, link to previous handoff
 - **Thread URL:** Current thread URL for context retrieval
+- **Git Branch:** `git_branch` from `metadata.json` (e.g., `track/<track_id>`)
+- **Worktree Path:** `worktree_path` from `metadata.json` (if track has a dedicated worktree)
+- **Beads Context:** Output of `bd show <epic_id>` — COMPLETED/IN PROGRESS/NEXT/KEY DECISIONS from epic notes
 - **Progress Summary:** Overall %, current phase/task, completed/remaining tasks
-- **Parallel Execution State:** (if applicable) Worker status, file locks, pending workers
+- **Parallel Execution State:** (if applicable) Active worktrees from `git worktree list`, `bd ready --epic` output
 - **Key Implementation Decisions:** Important choices made during this section
 - **Code Changes Summary:** Files modified, new files, recent commits
 - **Learnings Extracted:** Key patterns/gotchas from `learnings.md` this section
@@ -129,14 +134,9 @@ Display:
 
 **PROTOCOL: Save handoff context to Beads for compaction-proof resumability.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue with markdown handoff only"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability Check:**
+   - Run the standard Beads availability check (see `beads-error-handler.md`)
+   - If `BEADS_AVAILABLE=false`: skip this section silently
 
 2. **Save Context to Beads with Full Structure:**
    ```bash
@@ -146,31 +146,26 @@ Display:
    NEXT: <next_task>
    BLOCKER: <if any>
    DISCOVERED: <new issues found, with beads IDs>
-   HANDOFF: Section <N> saved at conductor/tracks/<track_id>/handoff_<timestamp>.md"
+   GIT_BRANCH: track/<track_id>
+   WORKTREE: <worktree_path from metadata.json, if set>
+   HANDOFF: Section <N> saved at conductor/tracks/<track_id>/handoff_<timestamp>.md" --json
    ```
-   - **If command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue with markdown handoff only"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - If any `bd` command fails: Follow Beads Error Handler Protocol (see `beads-error-handler.md`)
 
-3. **Parallel Workers Handoff (if parallel_state.json exists):**
-   - For each active parallel worker, save Beads context:
+3. **Parallel Workers Handoff (if active worktrees exist):**
+   - For each open worker task (from `bd ready --epic <id>` or tasks still `in_progress`):
      ```bash
-     bd note <worker_beads_task_id> "HANDOFF: Worker <id> state saved"
-     STATUS: <in_progress|completed|pending>
-     FILES_OWNED: <exclusive files>
-     PROGRESS: <description of work done>
-     ASSIGNEE: <worker_id>" --json
+     bd note <worker_beads_task_id> "HANDOFF: Worker state saved
+     WORKTREE: .worktrees/<track_id>/worker_<N>_<name>
+     BRANCH: track/<track_id>/worker_<N>_<name>
+     STATUS: <in_progress|pending>
+     PROGRESS: <description of work done so far>" --json
      ```
-   - Include parallel state summary in epic notes:
+   - Update epic with parallel state summary:
      ```bash
-     bd note <epic_id> "... (see handoff summary)"
-     PARALLEL_STATE: <N> workers, <M> completed, <K> in progress
-     WORKERS: <list of worker_ids and their status>" --json
+     bd note <epic_id> "PARALLEL_HANDOFF: <N> workers active
+     ACTIVE_WORKTREES: <list from git worktree list>
+     READY_NEXT: <output of bd ready --epic <id>>" --json
      ```
 
 4. **Format for Compaction Recovery:**

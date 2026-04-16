@@ -197,6 +197,12 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
 6. **Create Directory:** `conductor/tracks/<track_id>/`
 
+6a. **Create Track Worktree (Git + Beads isolation):**
+   - Run: `bd worktree create .worktrees/<track_id> --branch track/<track_id>`
+   - This creates a git worktree on branch `track/<track_id>` AND auto-configures a `.beads` redirect file so Beads/Dolt is shared from the root `.beads/` database.
+   - If `bd` unavailable or fails: Fall back to `git checkout -b track/<track_id>`
+   - Announce: "Created worktree at `.worktrees/<track_id>` on branch `track/<track_id>`"
+
 7. **Create `metadata.json`:**
    ```json
    {
@@ -208,7 +214,9 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
      "estimated_hours": null,
      "created_at": "YYYY-MM-DDTHH:MM:SSZ",
      "updated_at": "YYYY-MM-DDTHH:MM:SSZ",
-     "description": "<Initial user description>"
+     "description": "<Initial user description>",
+     "git_branch": "track/<track_id>",
+     "worktree_path": ".worktrees/<track_id>"
    }
    ```
    Populate with actual values from steps 3-5.
@@ -338,9 +346,20 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
      - Task keys: `phase{N}_task{M}` (both 1-indexed, e.g., `phase1_task1`, `phase2_task3`)
    - Store ALL phase and task IDs returned from `bd create --json` commands
 
-6. **Announce:** "Track synced to Beads as epic <epic_id>."
+6. **Seed Epic with Init Note:**
+   - After creating the epic, run:
+     ```bash
+     bd note <epic_id> "TRACK INITIALIZED: <track_id>
+     SPEC: <one-line summary from spec.md>
+     PHASES: <count> phases — <comma-separated phase names>
+     BRANCH: track/<track_id>
+     WORKTREE: .worktrees/<track_id>
+     KEY CONSTRAINTS: <main technical decisions from spec>" --json
+     ```
 
-7. **Parallel Execution Notes (if parallel enabled):**
+7. **Announce:** "Track synced to Beads as epic <epic_id>."
+
+8. **Parallel Execution Notes (if parallel enabled):**
    - For each task in a parallel phase, add file ownership to Beads notes:
      ```bash
      bd note <task_id> "PARALLEL_ENABLED: true

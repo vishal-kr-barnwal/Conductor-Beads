@@ -81,23 +81,24 @@ List all tasks marked with `[!]`:
 
 ## 5a. Parallel Execution Status
 
-If any track has `parallel_state.json`:
+If any track's `metadata.json` has a `worktree_path` field (indicating parallel execution was started):
 
 ```
 ### Parallel Execution (Phase: [phase_name])
 
-**Status:** Running | Waiting for workers | Complete
+**Status:** Running | Aggregating | Complete
 
-**Workers:**
-- 🟢 worker_1_auth: Completed (commit: abc1234)
-- 🔵 worker_2_config: In Progress (45 min)
-- ⚪ worker_3_utils: Pending (depends on worker_1)
+**Active Worktrees** (from `git worktree list`):
+- 🟢 .worktrees/<track_id>/worker_0_auth: branch track/<id>/worker_0 (commit: abc1234)
+- 🔵 .worktrees/<track_id>/worker_1_config: branch track/<id>/worker_1 (in progress)
 
-**File Locks:**
-- src/auth/index.ts → worker_1_auth
-- src/config/index.ts → worker_2_config
+**Ready Next** (`bd ready --epic <epic_id>`):
+- bd-<id>.2.1 "Task 3 — utils" (unblocked after worker_0 closes)
 
-**Progress:** 1/3 workers complete
+**Session Context** (`bd show <epic_id>` → notes):
+- COMPLETED: <from epic notes>
+- IN PROGRESS: <from epic notes>
+- NEXT: <from epic notes>
 ```
 
 ## 6. Suggestions
@@ -113,25 +114,13 @@ Based on status:
 
 **PROTOCOL: Show Beads task status.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue without Beads status"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability Check:**
+   - Run the standard Beads availability check (see `references/beads-error-handler.md`)
+   - If `BEADS_AVAILABLE=false`: skip this section silently
 
 2. **Gather Beads Status:**
    - Run `bd ready --json` to get tasks with no blockers
-   - **If command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue without Beads status"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - If any `bd` command fails: Follow Beads Error Handler Protocol (see `references/beads-error-handler.md`)
    - For active track with `beads_epic` in metadata:
      - Run `bd show <epic_id> --json` to get full context
      - Read epic notes for last session context (COMPLETED, IN PROGRESS, NEXT)

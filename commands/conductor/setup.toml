@@ -281,11 +281,15 @@ Present to user:
      {
        "enabled": true,
        "mode": "normal|stealth",
-       "sync": "bidirectional",
+       "memoryStrategy": "beads-primary",
        "epicPrefix": "conductor",
        "autoCreateTasks": true,
-       "autoSyncOnComplete": true,
-       "compactOnArchive": true
+       "compactOnPhaseComplete": true,
+       "pushOnTaskComplete": false,
+       "pushOnPhaseComplete": true,
+       "pushOnTrackComplete": true,
+       "worktreePerTrack": true,
+       "worktreePerWorker": true
      }
      ```
    - Announce: "Beads integration enabled in [normal/stealth] mode."

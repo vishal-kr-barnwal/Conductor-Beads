@@ -180,28 +180,32 @@ Revert Conductor work: $ARGUMENTS
 
 ---
 
-## 6.0 BEADS SYNC
+## 6.0 WORKTREE TEARDOWN (Track Revert Only)
+
+**PROTOCOL: If reverting an entire track, clean up its worktree and branch.**
+
+1. **Check metadata for worktree:**
+   - Read `conductor/tracks/<track_id>/metadata.json` for `worktree_path` and `git_branch`
+   - If `worktree_path` is set and exists on disk:
+     ```bash
+     bd worktree remove .worktrees/<track_id>
+     ```
+     - **If `bd` command fails:** → Follow Beads Error Handler Protocol (references/beads-error-handler.md)
+       - Degraded fallback: `git worktree remove .worktrees/<track_id> --force`
+   - Delete the branch: `git branch -D track/<track_id>`
+   - Announce: "Worktree `.worktrees/<track_id>` and branch `track/<track_id>` removed."
+
+---
+
+## 7.0 BEADS SYNC
 
 **PROTOCOL: Sync revert action with Beads.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue without Beads sync"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability check:** → See Beads Error Handler Protocol (references/beads-error-handler.md)
 
 2. **Sync Revert Actions:**
-   - Reopen reverted tasks: `bd reopen <task_id> --reason "Reverted"`
-   - Add note: `bd note <epic_id> "REVERT: <summary>"`
-   - For track revert: Close or reopen entire epic
-   - **If any `bd` command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue without Beads sync"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - Reopen reverted tasks: `bd reopen <task_id> --reason "Reverted" --json`
+   - Add note: `bd note <epic_id> "REVERT: <summary>" --json`
+   - For task/phase revert: reopen only affected tasks
+   - For track revert: `bd reopen <epic_id> --reason "Track reverted" --json`
+   - **If any `bd` command fails:** → Follow Beads Error Handler Protocol (references/beads-error-handler.md)

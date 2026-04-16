@@ -79,10 +79,17 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
      - `conductor/workflow.md`
    - **Error Handling:** If any read fails, STOP and inform user
 
-3a. **Load Patterns Context (Ralph-style knowledge priming):**
+3a. **Load Context (Beads-first, files as fallback):**
+
+    **Priority order — BEADS FIRST (if enabled):**
+    - **Step 1:** `bd prime` — loads AI-optimized workflow context for the entire project
+    - **Step 2:** `bd show <beads_epic>` — read the `notes` field for prior session state
+    - **Step 3:** `bd ready --epic <beads_epic>` — find all unblocked tasks now
+    - **Announce:** "📊 **Beads Context:** X tasks ready, last session: [notes summary]"
+
+    **FILE FALLBACK (if Beads disabled):**
     - **Read Project Patterns:** If `conductor/patterns.md` exists:
       - Read and announce: "📚 **Codebase Patterns:** Found X patterns from previous tracks"
-      - These patterns inform implementation decisions
     - **Read Track Learnings:** If `conductor/tracks/<track_id>/learnings.md` exists:
       - Read to understand prior work on this track
       - Display: "📝 **Track Learnings:** Resuming with context from previous sessions"
@@ -173,29 +180,57 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         - If B: Proceed with warning
         - If C: HALT
       
-      **c4. Initialize Parallel State:**
-      - Create `conductor/tracks/<track_id>/parallel_state.json`
-      
-      **c5. Spawn Parallel Workers:**
-      - For each task with no unmet dependencies, spawn a sub-agent using Task()
-      - Record each spawned worker in `parallel_state.json`
-      - Update `file_locks` with each worker's file ownership
-      
-      **c6. Monitor Worker Completion:**
-      - Periodically read `parallel_state.json` (every 30 seconds)
-      - When a worker completes (status = "completed"):
-        - Check if any dependent tasks can now start
-        - Spawn newly unblocked workers
-        - Increment `completed_workers` count
-      - Handle worker failures
-      
-      **c7. Aggregate Results:**
-      - Wait until all workers complete
-      - Update `plan.md`: Mark all parallel tasks as `[x]` complete
+      **c4. Initialize Worker Worktrees (replaces file_locks):**
+      - For each parallel task, create an isolated git worktree:
+        ```bash
+        bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
+          --branch track/<track_id>/worker_<N>_<name>
+        ```
+      - `bd worktree` auto-configures `.beads` redirect in each worktree — all workers share one Dolt DB.
+      - Create `parallel_state.json` as audit log only (not used for coordination).
+
+      **c5. Spawn Parallel Workers (Wave Model):**
+      - Pre-assign this wave's tasks in Beads before spawning:
+        ```bash
+        bd update <beads_task_id> --status in_progress \
+          --assignee worker_<N>_<name> --json
+        ```
+      - For each task in current wave, spawn a sub-agent:
+        - Worker directory: `.worktrees/<track_id>/worker_<N>/`
+        - Worker fetches task context via: `bd show <beads_task_id>` (design + acceptance fields)
+        - Worker completion sequence:
+          1. Commit code on worker branch
+          2. `bd note <task_id> "COMPLETED: ...\nCOMMIT: <sha>\nFILES: ..."  --json`
+          3. `bd close <task_id> --continue --reason "Task completed" --json`
+             (`--continue` auto-advances Beads dep graph — no polling needed)
+          4. Update `parallel_state.json` status="completed" (audit only)
+          5. Do NOT run `bd dolt push` (coordinator handles this once)
+
+      **c6. Wave-Model Monitoring (Beads-driven, no polling):**
+      - Task() calls are awaitable — wait for current wave to complete.
+      - After each wave: run `bd ready --epic <epic_id> --json` to find next wave tasks.
+      - Spawn next wave. Repeat until `bd ready` returns empty.
+      - Failed workers: reset via `bd update <id> --assignee "" --status open --json`
+
+      **c7. Aggregate Results (merge worktrees, one dolt push):**
+      - For each completed worker in order:
+        ```bash
+        git merge --no-ff track/<track_id>/worker_<N>_<name> \
+          -m "conductor(parallel): merge worker_<N>: <task>"
+        bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
+        ```
+      - If merge conflict: HALT, show files, ask user to resolve.
+      - After all merges:
+        ```bash
+        bd dolt push  # One push for all workers
+        bd ready --epic <epic_id> --json  # Verify all complete
+        bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>
+        WORKERS: <N> succeeded
+        COMMITS: <sha_list>" --json
+        ```
+      - Update `plan.md`: mark all parallel tasks `[x]`, append SHAs
       - Delete `parallel_state.json`
-      - Check phase graph: are there other ready phases to process?
-      - If yes: Go back to step 5a to process next ready phase(s)
-      - If no more phases: Proceed to step 6 (Finalize Track)
+      - Check phase graph: process next ready phases or proceed to step 6
 
    d. **SEQUENTIAL EXECUTION FLOW:**
    
@@ -208,14 +243,23 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         - **CRITICAL: NEVER run `git push`. All commits stay local. Users decide when to push.**
         - **i-a. Beads Task Start (If Enabled):** After marking task `[~]` in progress:
           - Look up `beads_task_id` from `beads_tasks` mapping
-          - If found, run: `bd update <beads_task_id> --status in_progress`
+          - If found, run: `bd update <beads_task_id> --status in_progress --json`
         - **i-b. Beads Task Complete (If Enabled):** After marking task `[x]` complete:
-          - Add structured completion notes
-          - Close with auto-advance: `bd close <beads_task_id> --continue --reason "Task completed"`
+          - BEADS FIRST: `bd note <task_id> "COMPLETED: <desc>\nCOMMIT: <sha>\nFILES: <list>\nPATTERNS: <any>" --json`
+          - Then: `bd close <beads_task_id> --continue --reason "Task completed" --json`
+          - FILE APPEND (always): append structured entry to `learnings.md`
       - **ii. Update Implementation State:** After marking task in progress
       - **iii. On Phase Completion:** When all tasks in a phase are complete:
         - Add phase name to `completed_phases` array
         - Reset `current_task_index` to 0
+        - **If Beads enabled:** Run:
+          ```bash
+          bd note <epic_id> "COMPLETED: Phase N - <phase_name>
+          IN PROGRESS: Phase N+1 - <next_phase>
+          NEXT: <first_task>" --json
+          bd compact --epic <epic_id>
+          bd dolt push
+          ```
 
       **d4. Handle Blocked Tasks:**
        - If task marked `[!]`:

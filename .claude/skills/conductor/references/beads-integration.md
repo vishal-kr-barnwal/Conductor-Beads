@@ -4,7 +4,7 @@
 
 Conductor integrates with [Beads](https://github.com/steveyegge/beads) to provide persistent task memory that survives context compaction. This creates a hybrid system:
 
-> **Compatible with Beads v0.56+.** Requires Dolt backend (now the only backend).
+> **Compatible with Beads v1.0.2+.** Uses embedded Dolt by default — no external server required.
 
 - **Conductor**: Human-readable specs and plans
 - **Beads**: Agent-optimized task state with dependency tracking
@@ -37,11 +37,11 @@ fi
 
 ## How It Works (when Beads is enabled)
 
-### Session Protocol (Enhanced - Based on Beads v0.56+ Best Practices)
+### Session Protocol (Enhanced - Based on Beads v1.0.2+ Best Practices)
 
 The recommended session workflow for maximum context preservation:
 
-> **v0.56+:** Beads requires a running Dolt SQL server. Start with `bd dolt start` before using bd commands. The server is typically started once and left running.
+> **v1.0.2+:** Beads uses embedded Dolt by default — no `bd dolt start` required.
 
 1. `bd prime` — Load AI-optimized workflow context (run first!)
 2. `bd ready` — Find unblocked work
@@ -397,69 +397,75 @@ def should_use_beads():
 
 When Conductor executes tasks in parallel, Beads provides coordination:
 
-### Worker Assignment Protocol
+### Worktree Architecture
 
-Each parallel worker claims its task with a unique assignee:
+Each parallel worker runs in a dedicated git worktree with a Beads redirect file. All workers share the same Dolt database — coordination happens through Beads, not through a shared state file.
 
-```bash
-# Coordinator assigns tasks to workers
-bd update <task_id> --status in_progress --assignee worker_1_auth --json
-
-# Worker can query only its assigned tasks
-bd ready --assignee worker_1_auth --json
+```
+repo/
+├── .beads/                          ← Single Dolt DB (source of truth)
+└── .worktrees/
+    ├── auth_20240101/               ← Track worktree (branch: track/auth_20240101)
+    │   └── .beads                   ← Redirect → ../../.beads/
+    └── payments_20240101/           ← Another track (concurrent)
+        └── .beads                   ← Redirect → ../../.beads/
+        └── .worktrees/
+            ├── worker_0_schema/     ← Parallel worker
+            │   └── .beads           ← Redirect → shared .beads/
+            └── worker_1_api/        ← Parallel worker
+                └── .beads           ← Redirect → shared .beads/
 ```
 
-### Parallel Worker Best Practices
+### Wave-Model Worker Protocol
 
-1. **Claim Before Work:**
-   ```bash
-   # Worker claims task at start
-   bd update <task_id> --status in_progress \
-     --assignee <worker_id> \
-     --notes "Started: <task_description>" \
-     --json
-   ```
-
-2. **Use Hash IDs for New Tasks:**
-   - Beads hash-based IDs prevent collisions when parallel workers create tasks
-   - Each worker can safely run `bd create` without coordination
-
-3. **Discovered Issues:**
-   ```bash
-   # Worker finds new issue during work
-   bd create "Found race condition" \
-     -t bug -p 2 \
-     --deps discovered-from:<current_task_id> \
-     --assignee <worker_id> \
-     --json
-   ```
-
-4. **Completion with Sync:**
-   ```bash
-   # Worker completes task
-   bd close <task_id> --reason "Completed" --json
-   
-   # CRITICAL: Force push after parallel work
-   bd dolt push
-   ```
-
-### Coordinator Protocol
-
-The coordinator manages parallel workers through Beads:
-
+**Coordinator before spawning each wave:**
 ```bash
-# 1. Before spawning workers
-for task in parallel_tasks:
-    bd update <task_id> --status in_progress \
-      --assignee worker_<N>_<name> \
-      --json
+# Pre-assign tasks to workers
+bd update <task_id> --status in_progress \
+  --assignee worker_<N>_<name> --json
 
-# 2. Workers execute independently
-# (Each worker updates its own assigned task)
+# Create isolated worktree per worker
+bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
+  --branch track/<track_id>/worker_<N>_<name>
+```
 
-# 3. After all workers complete
-bd dolt push  # Force push all changes
-bd ready --epic <epic_id> --json  # Verify all complete
+**Each worker's completion sequence (in worker prompt):**
+```bash
+# 1. Commit code (inside worktree)
+git commit -m "feat(scope): description"
+
+# 2. Note to Beads (structured for compaction survival)
+bd note <task_id> "COMPLETED: <description>
+COMMIT: <sha>
+FILES: <list>
+PATTERNS: <any reusable patterns found>" --json
+
+# 3. Close and auto-advance dependency graph
+bd close <task_id> --continue --reason "Task completed" --json
+# (--continue marks dependent tasks as ready — drives next wave)
+
+# Do NOT run bd dolt push — coordinator handles this once
+```
+
+**Coordinator after all waves complete:**
+```bash
+# Merge each worker branch
+for worker in completed_workers:
+    git merge --no-ff track/<track_id>/worker_<N>_<name> \
+      -m "conductor(parallel): merge worker_<N>: <task>"
+    bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
+
+# One push for all workers combined
+bd dolt push
+bd ready --epic <epic_id> --json  # Verify empty (all done)
+```
+
+**Wave scheduling via Beads (replaces 30s polling):**
+```bash
+# After each wave completes, find next wave
+bd ready --epic <epic_id> --json
+# Returns tasks whose dependencies were auto-advanced by --continue
+# Spawn those as the next wave
 ```
 
 ### Concurrent Safety

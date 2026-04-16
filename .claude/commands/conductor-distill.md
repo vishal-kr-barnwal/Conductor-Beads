@@ -158,7 +158,8 @@ bd mol distill <beads_epic_id> \
 
 **Handle Failure:**
 - Display error message
-- Suggest manual extraction steps
+- If any `bd` command fails: Follow Beads Error Handler Protocol (see `references/beads-error-handler.md`)
+- Suggest manual extraction steps as fallback
 
 ---
 

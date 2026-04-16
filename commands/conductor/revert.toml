@@ -156,29 +156,30 @@ CRITICAL: User's explicit confirmation is required at multiple checkpoints.
 
 ---
 
-## 6.0 BEADS SYNC
+## 6.0 WORKTREE TEARDOWN (Track Revert Only)
+
+**PROTOCOL: If reverting an entire track, clean up its worktree and branch.**
+
+1. Read `conductor/tracks/<track_id>/metadata.json` for `worktree_path` and `git_branch`
+2. If worktree exists:
+   ```bash
+   bd worktree remove .worktrees/<track_id>
+   ```
+   - If `bd` fails: fallback to `git worktree remove .worktrees/<track_id> --force`
+3. `git branch -D track/<track_id>`
+
+---
+
+## 7.0 BEADS SYNC
 
 **PROTOCOL: Sync revert action with Beads.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue without Beads sync"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability check:** Run `which bd` + check `conductor/beads.json` enabled field
+   - If unavailable: skip this section
 
 2. **Sync Revert Actions:**
-   - Reopen reverted tasks: `bd reopen <task_id> --reason "Reverted"`
-   - Add note: `bd note <epic_id> "REVERT: <summary>"`
-   - For track revert: Close or reopen entire epic
-   - **If any `bd` command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue without Beads sync"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - Reopen reverted tasks: `bd reopen <task_id> --reason "Reverted" --json`
+   - Add note: `bd note <epic_id> "REVERT: <summary>" --json`
+   - For track revert: `bd reopen <epic_id> --reason "Track reverted" --json`
+   - If any `bd` command fails: log warning and continue (do not block revert)
 """

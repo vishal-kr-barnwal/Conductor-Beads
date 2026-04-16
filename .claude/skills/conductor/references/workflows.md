@@ -125,9 +125,9 @@ Run the detection check, then use bd commands:
 | `bd admin compact [<id>]` | Compact completed tasks to reduce clutter |
 | `bd relate <id1> <id2>` | Link related issues (bidirectional) |
 | `bd dolt push` | Push Dolt data to remote |
-| `bd dolt start` | Start Dolt SQL server (required v0.56+) |
+| `bd dolt push` | Push Dolt data to remote |
 
-> **v0.56+:** Beads requires a running Dolt SQL server. Ensure `bd dolt start` has been run before using bd commands.
+> **v1.0.2+:** Beads uses embedded Dolt by default — no `bd dolt start` required.
 
 ### Workflow Integration Points (only when Beads enabled)
 
@@ -208,7 +208,24 @@ If a `bd` command fails unexpectedly:
 
 ## Parallel Execution
 
-Conductor supports parallel task execution for phases with independent tasks.
+Conductor supports parallel task execution using git worktrees for true isolation. Each worker gets an isolated working directory on its own branch; all workers share one Dolt database via Beads redirect files.
+
+### Worktree Architecture
+
+```
+repo/
+├── .beads/                          ← Single Dolt DB (source of truth)
+└── .worktrees/
+    ├── auth_20240101/               ← Track worktree (branch: track/auth_20240101)
+    │   └── .beads                   ← Redirect → ../../.beads/
+    └── .worktrees/
+        ├── worker_0_schema/         ← Parallel worker
+        │   └── .beads               ← Redirect → shared .beads/
+        └── worker_1_api/            ← Parallel worker
+            └── .beads               ← Redirect → shared .beads/
+```
+
+**Key invariant:** One Dolt database. All git branches and all worktrees share it via redirect files auto-configured by `bd worktree create`.
 
 ### Plan.md Format for Parallel Phases
 
@@ -227,17 +244,21 @@ Conductor supports parallel task execution for phases with independent tasks.
   <!-- depends: task1 -->
 ```
 
-### Parallel Execution Flow
+### Parallel Execution Flow (Wave Model)
 
 1. **Parse annotations**: Check for `<!-- execution: parallel -->`
 2. **Build dependency graph**: Extract `files:` and `depends:` annotations
-3. **Detect file conflicts**: Ensure no two tasks share files
-4. **Initialize state**: Create `parallel_state.json`
-5. **Spawn workers**: Use Task() to spawn sub-agents for independent tasks
-6. **Monitor completion**: Poll `parallel_state.json` for worker status
-7. **Aggregate results**: Collect commits, update plan.md
+3. **Detect file conflicts**: Warn if any two tasks claim the same file
+4. **Create worktrees**: `bd worktree create .worktrees/<track>/worker_<N> --branch track/<id>/worker_<N>`
+5. **Spawn wave-0 workers**: Task() agents for tasks with no dependencies
+   - Workers fetch context via `bd show <task_id>` (not embedded spec)
+   - Workers complete with `bd close --continue` (auto-advances Beads dep graph)
+6. **Next wave via Beads**: `bd ready --epic <id>` finds newly unblocked tasks → spawn next wave
+7. **Aggregate**: Merge each worker branch, `bd worktree remove`, one `bd dolt push`
 
-### parallel_state.json Schema
+### parallel_state.json Schema (Audit Log Only)
+
+`parallel_state.json` is now an audit log — it does **not** drive coordination (Beads does that).
 
 ```json
 {
@@ -246,16 +267,15 @@ Conductor supports parallel task execution for phases with independent tasks.
   "started_at": "2024-12-30T10:00:00Z",
   "workers": [
     {
-      "worker_id": "worker_1_auth",
+      "worker_id": "worker_0_auth",
       "task": "Task 1: Create auth module",
-      "files": ["src/auth/index.ts"],
+      "beads_task_id": "bd-a3f8.1.1",
+      "worktree": ".worktrees/auth_20240101/worker_0_auth",
+      "branch": "track/auth_20240101/worker_0_auth",
       "status": "completed",
       "commit_sha": "abc1234"
     }
   ],
-  "file_locks": {
-    "src/auth/index.ts": "worker_1_auth"
-  },
   "completed_workers": 1,
   "total_workers": 3
 }
@@ -263,8 +283,8 @@ Conductor supports parallel task execution for phases with independent tasks.
 
 ### When to Use Parallel Execution
 
-- ✅ Tasks modifying different files
+- ✅ Tasks modifying different files (physically isolated by worktrees)
 - ✅ Independent components (auth, config, utils)
 - ✅ Multiple test file creation
-- ❌ Tasks with shared state
-- ❌ Tasks with sequential dependencies
+- ❌ Tasks that must share a file (make them sequential)
+- ❌ Tasks with sequential logical dependencies (use `<!-- depends: taskN -->`)

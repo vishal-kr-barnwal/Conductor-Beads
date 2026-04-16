@@ -233,6 +233,13 @@ Create a new track for: $ARGUMENTS
 
 6. **Create Directory:** `conductor/tracks/<track_id>/`
 
+6a. **Create Track Worktree (Git + Beads isolation):**
+   - Run: `bd worktree create .worktrees/<track_id> --branch track/<track_id>`
+   - This creates a git worktree on branch `track/<track_id>` AND auto-configures a `.beads` redirect file inside the worktree so Beads/Dolt is shared from the root `.beads/` database.
+   - **If `bd` command fails:** → Follow Beads Error Handler Protocol (see references/beads-error-handler.md)
+     - If degraded (A): Fall back to `git checkout -b track/<track_id>` (no Beads redirect configured)
+   - Announce: "Created worktree at `.worktrees/<track_id>` on branch `track/<track_id>`"
+
 7. **Create `metadata.json`:**
    ```json
    {
@@ -244,7 +251,9 @@ Create a new track for: $ARGUMENTS
      "estimated_hours": null,
      "created_at": "YYYY-MM-DDTHH:MM:SSZ",
      "updated_at": "YYYY-MM-DDTHH:MM:SSZ",
-     "description": "<Initial user description>"
+     "description": "<Initial user description>",
+     "git_branch": "track/<track_id>",
+     "worktree_path": ".worktrees/<track_id>"
    }
    ```
    Populate with actual values from steps 3-5.
@@ -377,9 +386,21 @@ Create a new track for: $ARGUMENTS
      - Task keys: `phase{N}_task{M}` (both 1-indexed, e.g., `phase1_task1`, `phase2_task3`)
    - Store ALL phase and task IDs returned from `bd create --json` commands
 
-7. **Announce:** "Track synced to Beads as epic <epic_id>."
+7. **Seed Epic with Init Note:**
+   - After creating the epic, run:
+     ```bash
+     bd note <epic_id> "TRACK INITIALIZED: <track_id>
+     SPEC: <one-line summary from spec.md>
+     PHASES: <count> phases — <comma-separated phase names>
+     BRANCH: track/<track_id>
+     WORKTREE: .worktrees/<track_id>
+     KEY CONSTRAINTS: <main technical decisions from spec>" --json
+     ```
+   - This note seeds the epic with enough context to recover a session after compaction.
 
-8. **Parallel Execution Notes (if parallel enabled):**
+8. **Announce:** "Track synced to Beads as epic <epic_id>."
+
+9. **Parallel Execution Notes (if parallel enabled):**
    - For each task in a parallel phase, add file ownership to Beads notes:
      ```bash
      bd note <task_id> "PARALLEL_ENABLED: true"

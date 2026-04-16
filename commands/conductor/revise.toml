@@ -10,21 +10,23 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 ## 1. Identify Track
 - Find active track (marked `[~]` in tracks.md)
 - If no active track, ask which track to revise
-- Check for `parallel_state.json` (parallel execution in progress)
+- Read `metadata.json` — check `worktree_path` field for active parallel execution
 
 ## 1a. Parallel Execution Check
 
-If `parallel_state.json` exists:
-> "⚠️ This track has parallel workers currently running."
-> "Revising the plan may affect in-progress workers."
-> 
-> "A) Wait for workers to complete, then revise"
-> "B) Revise now (affected workers may need restart)"
-> "C) Cancel revision"
+If `metadata.json` has a `worktree_path` field:
+- Run `git worktree list` — check if any worker worktrees are still active
+- If active worktrees found:
+  > "⚠️ This track has parallel workers currently running."
+  > "Revising the plan may affect in-progress workers."
+  >
+  > "A) Wait for workers to complete, then revise"
+  > "B) Revise now (affected workers may need restart)"
+  > "C) Cancel revision"
 
-- If A: Monitor until complete, then proceed
-- If B: Note affected tasks in revision, workers operating on changed tasks should abort
-- If C: HALT
+  - If A: Poll `bd ready --epic <epic_id>` until it returns empty, then proceed
+  - If B: Note affected tasks in revision; workers on changed tasks should abort and restart after revision
+  - If C: HALT
 
 ## 2. Determine Revision Type
 Ask what needs revision:
@@ -92,14 +94,9 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
 
 **PROTOCOL: Sync revisions with Beads.**
 
-1. **Check for Beads CLI:**
-   - Run `which bd`
-   - **If NOT found:**
-     > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
-     > "A) Continue without Beads sync"
-     > "B) Stop - I'll install Beads first"
-     - If A: Skip this section
-     - If B: HALT and wait for user
+1. **Availability Check:**
+   - Run the standard Beads availability check (see `beads-error-handler.md`)
+   - If `BEADS_AVAILABLE=false`: skip this section silently
 
 2. **Sync Task Changes:**
    - NEW tasks: 
@@ -111,14 +108,7 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
      ```
    - REMOVED tasks: `bd close <task_id> --reason "Removed in revision #N: <reason>"`
    - MODIFIED tasks: `bd note <task_id> "REVISED: <what changed and why>"`
-   - **If any `bd` command fails:**
-     > "⚠️ Beads command failed: <error message>"
-     > "A) Continue without Beads sync"
-     > "B) Retry the failed command"
-     > "C) Stop - I'll fix the issue first"
-     - If A: Skip remaining Beads steps
-     - If B: Retry the command
-     - If C: HALT and wait for user
+   - If any `bd` command fails: Follow Beads Error Handler Protocol (see `beads-error-handler.md`)
 
 3. **Add Revision Note to Epic:**
    ```bash
@@ -129,28 +119,26 @@ Revisions are valuable learnings - they indicate gaps in initial understanding.
    ```
 
 4. **Parallel Execution Changes (if parallel annotations modified):**
-   
+
    **Phase-Level Dependencies:**
    - If phase `<!-- depends: -->` annotations changed:
      - For phases with NEW dependencies: `bd dep add <phase_id> <dependency_phase_id>`
      - For phases with REMOVED dependencies: Update epic notes to reflect new structure
      - For phases changed to `<!-- depends: -->` (empty - no dependencies):
        - Remove all phase-level dependencies in Beads for this phase
-   
+
    **Task-Level Parallel Config:**
-   - For NEW parallel tasks: Add file ownership notes:
+   - For NEW parallel tasks: Note task context in Beads:
      ```bash
-     bd note <new_task_id> "PARALLEL_ENABLED: true
-     FILES_OWNED: <comma-separated file list>
+     bd note <new_task_id> "REVISED: New parallel task added
      DEPENDS_ON: <task dependencies>" --json
      ```
    - For MODIFIED parallel annotations (files/depends changed):
      ```bash
      bd note <task_id> "REVISED: Parallel config changed
-     FILES_OWNED: <new file list>
      DEPENDS_ON: <new dependencies>" --json
      ```
    - If parallel phase changed to sequential (or vice versa):
-     - Clear/set `PARALLEL_ENABLED` in task notes
      - Clear assignees if reverting to sequential: `bd update <id> --assignee "" --json`
+   - Note: File isolation is enforced by worktrees (physical), not tracked in Beads notes
 """
