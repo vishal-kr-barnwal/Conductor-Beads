@@ -27,8 +27,8 @@ Initialize this project with context-driven development. Follow this workflow pr
    - If `STEP` is `"2.2_product_guidelines"`: Announce "Resuming: Guidelines complete. Next: Tech Stack." → Proceed to **Section 2.3**
    - If `STEP` is `"2.3_tech_stack"`: Announce "Resuming: Tech Stack complete. Next: Code Styleguides." → Proceed to **Section 2.4**
    - If `STEP` is `"2.4_code_styleguides"`: Announce "Resuming: Styleguides complete. Next: Workflow." → Proceed to **Section 2.5**
-   - If `STEP` is `"2.5_workflow"`: Announce "Resuming: Scaffolding complete. Next: Initial Track." → Proceed to **Phase 2 (Section 3.0)**
-   - If `STEP` is `"3.3_initial_track_generated"` or `"complete"`:
+   - If `STEP` is `"2.5_workflow"`: Announce "Resuming: Scaffolding complete. Next: Beads Integration." → Proceed to **Section 2.7**
+   - If `STEP` is `"complete"`:
      - Announce: "Project already initialized. Use `/conductor-newtrack` or `/conductor-implement`."
      - **HALT** the setup process.
    - If `STEP` is unrecognized: Announce error and halt.
@@ -42,7 +42,7 @@ Present to user:
 > 1. **Project Discovery:** Analyze if this is new or existing project
 > 2. **Product Definition:** Define vision, guidelines, and tech stack
 > 3. **Configuration:** Select code style guides and workflow
-> 4. **Track Generation:** Create the initial development track
+> 4. **Beads Integration:** Set up persistent task memory
 >
 > Let's get started!"
 
@@ -248,7 +248,7 @@ Present to user:
 ### 2.6 Finalization
 
 1. **Summarize:** List all files created/copied.
-2. **Transition:** Announce proceeding to initial track generation.
+2. **Transition:** Announce proceeding to Beads Integration.
 
 ---
 
@@ -262,7 +262,7 @@ Present to user:
      > "⚠️ Beads CLI (`bd`) is not installed. Beads provides persistent task memory across sessions."
      > "A) Continue without Beads integration"
      > "B) Stop - I'll install Beads first"
-     - If A: Set `beads_available = false`, skip to Section 3.0
+     - If A: Set `beads_available = false`, skip to Section 2.8
      - If B: HALT and wait for user
 
 2. **If Beads Available, Ask User:**
@@ -279,7 +279,7 @@ Present to user:
      > "A) Continue without Beads integration"
      > "B) Retry the failed command"
      > "C) Stop - I'll fix the issue first"
-     - If A: Set `beads_available = false`, skip to Section 3.0
+     - If A: Set `beads_available = false`, skip to Section 2.8
      - If B: Retry the command
      - If C: HALT and wait for user
    - Create `conductor/beads.json`:
@@ -300,112 +300,16 @@ Present to user:
      ```
    - Announce: "Beads integration enabled in [normal/stealth] mode."
 
----
-
-## 3.0 PHASE 2: INITIAL PLAN AND TRACK GENERATION
-
-### 3.1 Generate Product Requirements (Greenfield Only)
-
-1. **Transition:** "Initial setup complete. Now defining high-level requirements."
-2. **Analyze:** Read `conductor/product.md`
-3. **Ask Questions (max 5):** Same A/B/C/D/E format, topics: user stories, functional/non-functional requirements
-4. **AUTO-GENERATE:** If E selected, infer remaining details
-
----
-
-### 3.2 Propose Initial Track
-
-1. **Announce:** "I will now propose an initial track."
-2. **Generate Track Title:** Analyze project context and propose:
-   - **Greenfield:** Usually MVP track
-   - **Brownfield:** Maintenance or targeted enhancement
-3. **User Confirmation:** If declined, ask for clarification.
-
----
-
-### 3.3 Create Track Artifacts
-
-1. **Announce:** "Creating artifacts for the initial track."
-
-2. **Initialize Tracks File:** Create `conductor/tracks.md`:
-   ```markdown
-   # Project Tracks
-
-   This file tracks all major tracks for the project.
-
-   ---
-
-   ## [ ] Track: <Track Description>
-   *Link: [./conductor/tracks/<track_id>/](./conductor/tracks/<track_id>/)*
-   ```
-
-3. **Generate Track Artifacts:**
-   - Generate unique Track ID: `shortname_YYYYMMDD`
-   - Create directory: `conductor/tracks/<track_id>/`
-   - Create `metadata.json`:
-     ```json
-     {
-       "track_id": "<track_id>",
-       "type": "feature",
-       "status": "new",
-       "created_at": "<timestamp>",
-       "updated_at": "<timestamp>",
-       "description": "<description>"
-     }
-     ```
-   - Generate `spec.md` and `plan.md`
-   - **Create `learnings.md`:**
-     ```markdown
-     # Track Learnings: <track_id>
-     
-     Patterns, gotchas, and context discovered during implementation.
-     
-     ## Codebase Patterns (Inherited)
-     
-     <!-- No patterns yet - this is the first track -->
-     
-     ---
-     
-     <!-- Learnings from implementation will be appended below -->
-     ```
-   - **CRITICAL: Inject Phase Completion Tasks** - For each Phase in `plan.md`, append:
-     `- [ ] Task: Conductor - User Manual Verification '<Phase Name>' (Protocol in workflow.md)`
-
-4. **Create Project Patterns File:**
-   - Create `conductor/patterns.md`:
-     ```markdown
-     # Codebase Patterns
-     
-     Reusable patterns discovered during development. Read this before starting new work.
-     
-     ## Code Conventions
-     <!-- Patterns will be added as tracks are completed -->
-     
-     ## Architecture
-     <!-- Patterns will be added as tracks are completed -->
-     
-     ## Gotchas
-     <!-- Patterns will be added as tracks are completed -->
-     
-     ## Testing
-     <!-- Patterns will be added as tracks are completed -->
-     
-     ---
-     Last refreshed: <timestamp>
-     ```
-   - Announce: "📚 Created `patterns.md` for capturing codebase learnings."
-
-5. **Commit State:**
+4. **Commit State:**
    ```json
-   {"last_successful_step": "3.3_initial_track_generated"}
+   {"last_successful_step": "complete"}
    ```
-
-6. **Announce Progress:** "Track '<description>' created."
 
 ---
 
-### 3.4 Final Announcement
+## 2.8 FINAL ANNOUNCEMENT
 
-1. **Announce Completion:** "Project setup and initial track generation complete."
+1. **Announce Completion:** "Project setup completed! You can now initiate a track using the `newTrack` command."
 2. **Commit Files:** `git add conductor && git commit -m "conductor(setup): Add conductor setup files"`
-3. **Next Steps:** "Run `/conductor-implement` to begin work."
+3. **Next Steps:** "Run `/conductor-newtrack` to begin work."
+
