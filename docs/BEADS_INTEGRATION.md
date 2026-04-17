@@ -241,10 +241,8 @@ DISCOVERED: Found race condition in token refresh (created bd-xyz)"
 
 ```bash
 bd note <epic_id> "..."           # Save context
-bd sync                           # Force sync to remote
+bd dolt push                      # Push changes to remote
 ```
-
-This bypasses the 30-second debounce and ensures changes persist immediately.
 
 ## Command Mapping
 
@@ -256,7 +254,7 @@ This bypasses the 30-second debounce and ensures changes persist immediately.
 | `/conductor-status` | `bd ready`, `bd show` | Combine outputs, read notes for context |
 | `/conductor-block` | `bd update --status blocked` | Sync both with structured notes |
 | `/conductor-skip` | `bd close` or `bd update` | Mark in both based on skip reason |
-| `/conductor-handoff` | `bd note`, `bd sync` | Save context + force sync |
+| `/conductor-handoff` | `bd note`, `bd dolt push` | Save context + push to remote |
 | `/conductor-revert` | `bd reopen` | Sync status |
 | `/conductor-archive` | `bd compact --auto` | Archive track + compact |
 
@@ -341,7 +339,7 @@ Beads provides robust coordination for Conductor's parallel task execution featu
 | **Assignee field** | Each worker claims exclusive ownership |
 | **SQLite transactions** | Serializes concurrent writes safely |
 | **`bd ready --assignee`** | Workers query only their assigned tasks |
-| **`bd sync`** | Force sync bypasses 30s debounce |
+| **`bd dolt push`** | Push changes to remote |
 
 ### Parallel Workflow with Beads
 
@@ -364,14 +362,14 @@ Beads provides robust coordination for Conductor's parallel task execution featu
     │             │   │             │   │             │
     │ bd update   │   │ bd update   │   │ bd update   │
     │ bd close    │   │ bd close    │   │ bd close    │
-    │ bd sync     │   │ bd sync     │   │ bd sync     │
+    │ bd dolt push│   │ bd dolt push│   │ bd dolt push│
     └─────────────┘   └─────────────┘   └─────────────┘
             │                 │                 │
             └─────────────────┼─────────────────┘
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     COORDINATOR                                   │
-│  4. bd sync (force sync all)                                     │
+│  4. bd dolt push (push all worker changes to remote)             │
 │  5. bd ready --epic <id> (verify all complete)                   │
 │  6. Aggregate results to plan.md                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -411,9 +409,6 @@ DURATION: <time>
 FILES_MODIFIED: <list>" --json
 
 bd close <task_id> --reason "Task completed" --json
-
-# CRITICAL: Force sync after parallel work
-bd sync
 ```
 
 ### Coordinator Commands
@@ -428,9 +423,6 @@ for task_id in <parallel_tasks>:
 
 **After All Workers Complete:**
 ```bash
-# Force sync to capture all worker updates
-bd sync
-
 # Verify completion
 bd ready --epic <epic_id> --json
 # Should return empty (all tasks done) or only sequential tasks
@@ -449,7 +441,7 @@ NEXT: <next_sequential_phase>" --json
 | Multiple workers update simultaneously | SQLite BEGIN IMMEDIATE serializes writes |
 | Same task updated by two workers | Avoided by unique `--assignee` per task |
 | Parallel `bd create` calls | Hash-based IDs guarantee no collision |
-| Rapid status changes | 30s debounce batches, `bd sync` forces immediate |
+| Rapid status changes | SQLite transactions serialize all writes safely |
 | Worker crashes mid-update | Coordinator detects timeout, clears assignee for retry |
 
 ### Error Recovery
@@ -502,19 +494,19 @@ Conductor tracks can be extracted as reusable templates:
 - `/conductor-wisp` - Quick ephemeral exploration
 - `/conductor-distill` - Extract template from completed track
 
-### Agents & Gates (v0.40+)
+### Gates (v0.40+)
 
-For parallel execution coordination:
+For human-in-the-loop checkpoints (gates are created automatically via formula steps with a `gate` field):
 
 ```bash
-# Register parallel worker
-bd agent register worker_1_auth
+# List open gates
+bd gate list
 
-# Create human-in-the-loop checkpoint
-bd gate create "Phase 1 Review"
+# Check and auto-resolve eligible gates
+bd gate check
 
-# Wait for approval
-bd gate wait <gate-id>
+# Manually resolve a gate after review
+bd gate resolve <gate-id>
 ```
 
 ### Cross-Project Dependencies

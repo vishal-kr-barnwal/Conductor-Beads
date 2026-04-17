@@ -781,7 +781,7 @@ When Beads integration is enabled, use these commands alongside Conductor:
 | `bd dep add <child> <parent>` | Add dependency |
 | `bd list` | See all tasks |
 | `bd search <query>` | Find tasks by keyword |
-| `bd sync` | Sync with git remote |
+| `bd dolt push` | Push changes to remote |
 
 ### Molecule Commands (v0.34+)
 

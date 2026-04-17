@@ -362,7 +362,7 @@ Beads provides robust coordination for parallel task execution with its concurre
 | **Assignee field** | Each worker claims exclusive ownership |
 | **SQLite transactions** | Serializes concurrent writes safely |
 | **`bd ready --assignee`** | Workers query only their assigned tasks |
-| **`bd sync`** | Force sync bypasses 30s debounce |
+| **`bd dolt push`** | Push changes to remote |
 
 ### Coordinator Protocol
 
@@ -378,7 +378,6 @@ for task in parallel_tasks:
 # (Each worker gets its beads_task_id in the prompt)
 
 # 3. After all workers complete - aggregate and verify
-bd sync  # Force sync all changes
 bd ready --epic <epic_id> --json  # Verify all complete
 bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>
 WORKERS: <N> succeeded
@@ -406,9 +405,6 @@ bd note <beads_task_id> "COMPLETED: commit <sha>
 DURATION: <time>
 FILES_MODIFIED: <list>" --json
 bd close <beads_task_id> --reason "Task completed" --json
-
-# CRITICAL: Force sync after parallel work
-bd sync
 ```
 
 ### Concurrent Safety Guarantees
@@ -418,7 +414,7 @@ bd sync
 | Multiple workers update simultaneously | SQLite BEGIN IMMEDIATE serializes writes |
 | Same task updated by two workers | Avoided by unique `--assignee` per task |
 | Parallel `bd create` calls | Hash-based IDs guarantee no collision |
-| Rapid status changes | 30s debounce batches, `bd sync` forces immediate |
+| Rapid status changes | SQLite transactions serialize all writes safely |
 | Worker crashes mid-update | Coordinator clears assignee for retry |
 
 ### Error Recovery
