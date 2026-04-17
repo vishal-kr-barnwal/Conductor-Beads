@@ -10,7 +10,7 @@ Beads supports several types of links between issues to create a knowledge graph
 |-----------|---------|-----------|-----------|----------|
 | `blocks` | `bd dep add` | Yes | One-way | Hard dependency |
 | `parent_id` | Auto (epics) | No | One-way (hierarchical) | Epic/subtask |
-| `relates_to` | `bd relate` | No | Bidirectional | "See also" connections |
+| `relates_to` | `bd dep relate` | No | Bidirectional | "See also" connections |
 | `replies_to` | `bd mail reply` | No | One-way | Message threading |
 | `duplicate_of` | `bd duplicate` | No | One-way | Consolidate duplicates |
 | `superseded_by` | `bd supersede` | No | One-way | Version chains |
@@ -29,7 +29,7 @@ Bidirectional "see also" links. Not blocking, not hierarchical.
 - Linking bugs to associated tasks
 - Building knowledge graphs
 
-**Decision:** "Are these issues connected but neither blocks the other?" → `bd relate`
+**Decision:** "Are these issues connected but neither blocks the other?" → `bd dep relate`
 
 ### duplicate_of — Consolidate Reports
 
@@ -79,7 +79,7 @@ What relationship exists between these issues?
 ├─ One blocks the other → bd dep add (blocking dependency)
 ├─ They're the same issue → bd duplicate <dup> --of <canonical>
 ├─ One replaces the other → bd supersede <old> --with <new>
-├─ They're related but independent → bd relate <id1> <id2>
+├─ They're related but independent → bd dep relate <id1> <id2>
 ├─ One was discovered during the other → bd dep add --type discovered-from
 └─ One is a reply to the other → bd mail reply (messaging)
 ```
@@ -94,7 +94,7 @@ What relationship exists between these issues?
 
 ## CLI Reference
 
-Run `bd relate --help`, `bd supersede --help`, `bd duplicate --help` for specific usage.
+Run `bd dep relate --help`, `bd supersede --help`, `bd duplicate --help` for specific usage.
 
 ## Related Resources
 

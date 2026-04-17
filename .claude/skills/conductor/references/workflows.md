@@ -123,8 +123,7 @@ Run the detection check, then use bd commands:
 | `bd close <id> --reason "<message>"` | Complete task with summary |
 | `bd show <id>` | View task details and dependencies |
 | `bd admin compact [<id>]` | Compact completed tasks to reduce clutter |
-| `bd relate <id1> <id2>` | Link related issues (bidirectional) |
-| `bd dolt push` | Push Dolt data to remote |
+| `bd dep relate <id1> <id2>` | Link related issues (bidirectional) |
 | `bd dolt push` | Push Dolt data to remote |
 
 > **v1.0.2+:** Beads uses embedded Dolt by default — no `bd dolt start` required.

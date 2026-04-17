@@ -270,7 +270,7 @@ Shows:
 | `bd close <id> --continue` | Complete task and auto-advance to next |
 | `bd note <id> "context"` | Add notes for session resume |
 | `bd dep add <child> <parent>` | Add dependency between tasks |
-| `bd relate <id1> <id2>` | Link related issues (bidirectional) |
+| `bd dep relate <id1> <id2>` | Link related issues (bidirectional) |
 | `bd dolt push` | Push to Dolt remote (use at session end) |
 
 ### Molecule Commands (v0.34+)

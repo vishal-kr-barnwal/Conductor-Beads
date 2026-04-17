@@ -76,7 +76,7 @@ Essential commands: `bd ready`, `bd create`, `bd show`, `bd update`, `bd note`, 
 | Async gates | `bd gate --help` | [ASYNC_GATES.md](resources/ASYNC_GATES.md) |
 | Worktrees | `bd worktree --help` | [WORKTREES.md](resources/WORKTREES.md) |
 | Messaging | `bd mail --help` | [MESSAGING.md](resources/MESSAGING.md) |
-| Graph links | `bd relate --help` | [GRAPH_LINKS.md](resources/GRAPH_LINKS.md) |
+| Graph links | `bd dep relate --help` | [GRAPH_LINKS.md](resources/GRAPH_LINKS.md) |
 | Dolt management | `bd dolt --help` | — |
 | SQL access | `bd sql --help` | — |
 | Graph visualization | `bd graph --help` | — |

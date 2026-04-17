@@ -200,7 +200,7 @@ Conductor can leverage Beads graph links for richer track relationships:
 
 | Link Type | Conductor Use Case | Command |
 |-----------|-------------------|---------|
-| `relates_to` | Link related tracks/tasks | `bd relate <id1> <id2>` |
+| `relates_to` | Link related tracks/tasks | `bd dep relate <id1> <id2>` |
 | `supersedes` | Spec revisions (v1 → v2) | `bd supersede <old> --with <new>` |
 | `duplicate_of` | Deduplicate similar tasks | `bd duplicate <dup> --of <canonical>` |
 | `discovered_from` | Work discovered during implementation | `bd create --deps discovered-from:<parent>` |
@@ -209,7 +209,7 @@ Conductor can leverage Beads graph links for richer track relationships:
 
 ```bash
 # Two tracks are related
-bd relate conductor_auth conductor_security
+bd dep relate conductor_auth conductor_security
 
 # Spec revision supersedes old version
 bd supersede bd-spec-v1 --with bd-spec-v2

@@ -526,8 +526,8 @@ bd sql "SELECT * FROM issues" --format json            # JSON output
 
 ```bash
 # Relate issues (bidirectional "see also")
-bd relate <id1> <id2>                                  # Link two related issues
-bd unrelate <id1> <id2>                                # Remove relationship
+bd dep relate <id1> <id2>                              # Link two related issues
+bd dep unrelate <id1> <id2>                            # Remove relationship
 
 # Mark duplicates
 bd duplicate <dup-id> --of <canonical-id>              # Mark as duplicate
