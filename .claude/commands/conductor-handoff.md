@@ -169,7 +169,7 @@ Display:
      ```bash
      bd note <worker_beads_task_id> "HANDOFF: Worker state saved
      WORKTREE: .worktrees/<track_id>/worker_<N>_<name>
-     BRANCH: track/<track_id>/worker_<N>_<name>
+     BRANCH: track_<track_id>_worker_<N>_<name>
      STATUS: <in_progress|pending>
      PROGRESS: <description of work done so far>" --json
      ```

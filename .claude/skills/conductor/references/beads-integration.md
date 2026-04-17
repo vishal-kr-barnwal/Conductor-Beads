@@ -426,7 +426,7 @@ bd update <task_id> --status in_progress \
 
 # Create isolated worktree per worker
 bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
-  --branch track/<track_id>/worker_<N>_<name>
+  --branch track_<track_id>_worker_<N>_<name>
 ```
 
 **Each worker's completion sequence (in worker prompt):**
@@ -451,7 +451,7 @@ bd close <task_id> --continue --reason "Task completed" --json
 ```bash
 # Merge each worker branch
 for worker in completed_workers:
-    git merge --no-ff track/<track_id>/worker_<N>_<name> \
+    git merge --no-ff track_<track_id>_worker_<N>_<name> \
       -m "conductor(parallel): merge worker_<N>: <task>"
     bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
 

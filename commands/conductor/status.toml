@@ -90,8 +90,8 @@ If any track's `metadata.json` has a `worktree_path` field (indicating parallel 
 **Status:** Running | Aggregating | Complete
 
 **Active Worktrees** (from `git worktree list`):
-- 🟢 .worktrees/<track_id>/worker_0_auth: branch track/<id>/worker_0 (commit: abc1234)
-- 🔵 .worktrees/<track_id>/worker_1_config: branch track/<id>/worker_1 (in progress)
+- 🟢 .worktrees/<track_id>/worker_0_auth: branch track_<id>_worker_0 (commit: abc1234)
+- 🔵 .worktrees/<track_id>/worker_1_config: branch track_<id>_worker_1 (in progress)
 
 **Ready Next** (`bd ready --epic <epic_id>`):
 - bd-<id>.2.1 "Task 3 — utils" (unblocked after worker_0 closes)

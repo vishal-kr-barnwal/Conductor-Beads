@@ -201,7 +201,7 @@ Implement track: $ARGUMENTS
       - For each parallel task, create an isolated git worktree with Beads redirect:
         ```bash
         bd worktree create .worktrees/<track_id>/worker_<N>_<sanitized_name> \
-          --branch track/<track_id>/worker_<N>_<sanitized_name>
+          --branch track_<track_id>_worker_<N>_<sanitized_name>
         ```
       - `bd worktree` auto-configures a `.beads` redirect file in each worktree pointing to the root `.beads/` database. All workers share one Dolt DB — no file_locks needed.
       - **If `bd` command fails:** → Follow Beads Error Handler Protocol (references/beads-error-handler.md)
@@ -236,7 +236,7 @@ Implement track: $ARGUMENTS
             - Worker ID: <worker_id>
             - Working directory: .worktrees/<track_id>/worker_<N>_<name>/
             - All file reads/writes MUST use this path as your root.
-            - Branch: track/<track_id>/worker_<N>_<name>
+            - Branch: track_<track_id>_worker_<N>_<name>
 
             ## Your Task (fetch from Beads)
             Run: bd show <beads_task_id>
@@ -275,7 +275,7 @@ Implement track: $ARGUMENTS
           "task": "<task_description>",
           "beads_task_id": "<beads_id>",
           "worktree": ".worktrees/<track_id>/worker_<N>_<sanitized_name>",
-          "branch": "track/<track_id>/worker_<N>_<sanitized_name>",
+          "branch": "track_<track_id>_worker_<N>_<sanitized_name>",
           "depends_on": ["<task_id>"],
           "status": "in_progress",
           "started_at": "<timestamp>"
@@ -300,7 +300,7 @@ Implement track: $ARGUMENTS
       - After all waves complete, merge each worker's branch into the track branch in completion order:
         ```bash
         # For each worker in order:
-        git merge --no-ff track/<track_id>/worker_<N>_<name> \
+        git merge --no-ff track_<track_id>_worker_<N>_<name> \
           -m "conductor(parallel): merge worker_<N>: <task_description>"
         bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
         ```

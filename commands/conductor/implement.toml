@@ -184,7 +184,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
       - For each parallel task, create an isolated git worktree:
         ```bash
         bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
-          --branch track/<track_id>/worker_<N>_<name>
+          --branch track_<track_id>_worker_<N>_<name>
         ```
       - `bd worktree` auto-configures `.beads` redirect in each worktree — all workers share one Dolt DB.
       - Create `parallel_state.json` as audit log only (not used for coordination).
@@ -215,7 +215,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
       **c7. Aggregate Results (merge worktrees, one dolt push):**
       - For each completed worker in order:
         ```bash
-        git merge --no-ff track/<track_id>/worker_<N>_<name> \
+        git merge --no-ff track_<track_id>_worker_<N>_<name> \
           -m "conductor(parallel): merge worker_<N>: <task>"
         bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
         ```

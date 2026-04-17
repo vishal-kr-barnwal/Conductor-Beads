@@ -48,7 +48,7 @@ For tracks with parallel execution annotations:
 - Verify `<!-- depends: ... -->` references valid task IDs
 - Check `metadata.json` for `worktree_path` — verify the path exists on disk
 - Scan `.worktrees/<track_id>/` subdirectories — any worker dir not matching a live open Beads task (`bd ready --epic <id>`) = stale orphan
-- Check `git branch --list 'track/<track_id>/worker_*'` for orphan branches (branch exists but worktree was removed)
+- Check `git branch --list 'track_<track_id>_worker_*'` for orphan branches (branch exists but worktree was removed)
 - Report stale worktrees/branches as ❌ Errors (offer auto-cleanup in step 7)
 
 ## 6. Report

@@ -249,7 +249,7 @@ repo/
 1. **Parse annotations**: Check for `<!-- execution: parallel -->`
 2. **Build dependency graph**: Extract `files:` and `depends:` annotations
 3. **Detect file conflicts**: Warn if any two tasks claim the same file
-4. **Create worktrees**: `bd worktree create .worktrees/<track>/worker_<N> --branch track/<id>/worker_<N>`
+4. **Create worktrees**: `bd worktree create .worktrees/<track>/worker_<N> --branch track_<id>_worker_<N>`
 5. **Spawn wave-0 workers**: Task() agents for tasks with no dependencies
    - Workers fetch context via `bd show <task_id>` (not embedded spec)
    - Workers complete with `bd close --continue` (auto-advances Beads dep graph)
@@ -271,7 +271,7 @@ repo/
       "task": "Task 1: Create auth module",
       "beads_task_id": "bd-a3f8.1.1",
       "worktree": ".worktrees/auth_20240101/worker_0_auth",
-      "branch": "track/auth_20240101/worker_0_auth",
+      "branch": "track_auth_20240101_worker_0_auth",
       "status": "completed",
       "commit_sha": "abc1234"
     }
