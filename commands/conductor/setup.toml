@@ -294,6 +294,19 @@ Present to user:
      ```
    - Announce: "Beads integration enabled in [normal/stealth] mode."
 
+3a. **Configure `.gitattributes` for Beads (Full Integration only):**
+   - **If mode A (full integration):**
+     - Check if `.gitattributes` exists in project root
+     - If `.beads/** merge=ours` is already present: skip
+     - Otherwise append:
+       ```
+       # Beads Dolt DB — keep main's version on merge; Dolt manages its own history
+       .beads/** merge=ours
+       ```
+     - `git add .gitattributes`
+     - Announce: "Configured `.gitattributes`: `.beads/` conflicts auto-resolve on PR merge"
+   - **If mode B (stealth):** Skip — `.beads/` is not tracked in git.
+
 4. **Commit State:**
    ```json
    {"last_successful_step": "complete"}

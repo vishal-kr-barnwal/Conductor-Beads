@@ -197,12 +197,6 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
 6. **Create Directory:** `conductor/tracks/<track_id>/`
 
-6a. **Create Track Worktree (Git + Beads isolation):**
-   - Run: `bd worktree create .worktrees/<track_id> --branch track/<track_id>`
-   - This creates a git worktree on branch `track/<track_id>` AND auto-configures a `.beads` redirect file so Beads/Dolt is shared from the root `.beads/` database.
-   - If `bd` unavailable or fails: Fall back to `git checkout -b track/<track_id>`
-   - Announce: "Created worktree at `.worktrees/<track_id>` on branch `track/<track_id>`"
-
 7. **Create `metadata.json`:**
    ```json
    {
@@ -261,7 +255,22 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
      *Link: [./conductor/tracks/<track_id>/](./conductor/tracks/<track_id>/)*
      ```
 
-10. **Announce Completion:**
+10a. **Scaffold Commit + Create Worktree:**
+   - Stage and commit all conductor files to main:
+     ```bash
+     git add conductor/tracks/<track_id>/
+     git add conductor/tracks.md
+     git commit -m "conductor(newtrack): scaffold <track_id>"
+     ```
+   - Create the worktree (track branch now inherits all scaffold files):
+     ```bash
+     bd worktree create .worktrees/<track_id> --branch track/<track_id>
+     ```
+   - If `bd` unavailable or fails: → Follow Beads Error Handler Protocol
+     - Degraded fallback: `git checkout -b track/<track_id>`
+   - Announce: "Worktree ready at `.worktrees/<track_id>` on branch `track/<track_id>`"
+
+11. **Announce Completion:**
     > "New track '<track_id>' has been created and added to the tracks file. Run `/conductor:implement` to start."
 
 ---

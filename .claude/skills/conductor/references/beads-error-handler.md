@@ -36,7 +36,7 @@ When `beads_enabled = false` (set by option A or initial unavailability):
 | `bd update --status in_progress` | Mark `[~]` in plan.md only |
 | `bd close --continue` | Mark `[x]` in plan.md, manually check next task |
 | `bd note <id> "..."` | Append to `learnings.md` only |
-| `bd ready --epic <id>` | Read plan.md for next `[ ]` task |
+| `bd ready --parent <id>` | Read plan.md for next `[ ]` task |
 | `bd dolt push` | Skip (no remote sync) |
 | `bd compact` | Skip (no compaction) |
 

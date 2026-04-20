@@ -101,7 +101,7 @@ Implement track: $ARGUMENTS
       - Read `conductor/tracks/<track_id>/metadata.json` for `beads_epic` and `beads_tasks` fields
       - Store `beads_tasks` mapping (maps plan task names to Beads IDs like `"phase1_task1": "bd-a3f8.1.1"`)
       - If `beads_epic` exists:
-        - Run `bd ready --epic <beads_epic>` to show tasks with no blockers
+        - Run `bd ready --parent <beads_epic>` to show tasks with no blockers
         - **If command fails:**
           > "⚠️ Beads command failed: <error message>"
           > "A) Continue without Beads integration"
@@ -280,7 +280,7 @@ Implement track: $ARGUMENTS
       - **If Beads enabled:** Force push all changes:
         ```bash
         bd dolt push
-        bd ready --epic <epic_id> --json  # Verify all complete
+        bd ready --parent <epic_id> --json  # Verify all complete
         bd update <epic_id> --notes "PARALLEL PHASE COMPLETE: <phase>
         WORKERS: <N> succeeded
         COMMITS: <sha_list>" --json

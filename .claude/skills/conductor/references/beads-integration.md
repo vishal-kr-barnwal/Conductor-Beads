@@ -114,7 +114,7 @@ The `metadata.json` contains a `beads_tasks` mapping that links plan tasks to Be
 
 | What | Command | Used For |
 |------|---------|----------|
-| **Ready tasks** | `bd ready --epic <id>` | Task selection (dependency-aware, no blockers) |
+| **Ready tasks** | `bd ready --parent <id>` | Task selection (dependency-aware, no blockers) |
 | **Epic notes** | `bd show <epic_id>` | Session resume, context recovery after compaction |
 | **Task status** | `bd show <task_id>` | Verify current state, check blockers |
 | **Blocked info** | `bd show <task_id>` | Understand what's blocking and why |
@@ -127,7 +127,7 @@ bd show <epic_id>
 # Returns notes: "COMPLETED: Phase 1, IN PROGRESS: auth middleware, NEXT: add rate limiting"
 
 # 2. Get ready tasks
-bd ready --epic <epic_id>
+bd ready --parent <epic_id>
 # Returns: tasks with no blockers, sorted by priority
 
 # 3. Resume with full context even if conversation history is gone
@@ -275,7 +275,7 @@ Enable integration via `conductor/beads.json`:
 # User runs /conductor-implement
 
 # 1. Conductor checks Beads for ready tasks
-bd ready --epic auth_20250115
+bd ready --parent auth_20250115
 
 # 2. Agent works on task, updates status
 bd update TASK-001 --status in_progress
@@ -425,7 +425,7 @@ bd update <task_id> --status in_progress \
   --assignee worker_<N>_<name> --json
 
 # Create isolated worktree per worker
-bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
+bd worktree create .worktrees/<track_id>_worker_<N>_<name> \
   --branch track_<track_id>_worker_<N>_<name>
 ```
 
@@ -453,17 +453,17 @@ bd close <task_id> --continue --reason "Task completed" --json
 for worker in completed_workers:
     git merge --no-ff track_<track_id>_worker_<N>_<name> \
       -m "conductor(parallel): merge worker_<N>: <task>"
-    bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
+    bd worktree remove .worktrees/<track_id>_worker_<N>_<name>
 
 # One push for all workers combined
 bd dolt push
-bd ready --epic <epic_id> --json  # Verify empty (all done)
+bd ready --parent <epic_id> --json  # Verify empty (all done)
 ```
 
 **Wave scheduling via Beads (replaces 30s polling):**
 ```bash
 # After each wave completes, find next wave
-bd ready --epic <epic_id> --json
+bd ready --parent <epic_id> --json
 # Returns tasks whose dependencies were auto-advanced by --continue
 # Spawn those as the next wave
 ```

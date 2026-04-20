@@ -4,7 +4,7 @@
 
 A unified toolkit for **Context-Driven Development** that combines structured planning with persistent memory. Turn your AI assistant into a proactive project manager that follows a strict protocol: **Context → Spec & Plan → Implement**.
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 ## What is Conductor-Beads?
 
@@ -14,6 +14,44 @@ Conductor-Beads integrates two powerful systems:
 - **Beads** provides the memory — persistent task tracking that survives conversation compaction
 
 Together, they enable AI agents to manage long-horizon development tasks without losing context across sessions.
+
+## What's New in v0.2.0
+
+### Bug Fixes
+- **`implement` now works on the track branch** — previously all work happened on `main`. The command now switches to the track worktree before any file operations or commits.
+- **`newtrack` creates worktree after scaffold commit** — the track branch is now cut from a commit that already includes spec.md, plan.md, and metadata.json.
+- **Flat worker worktree paths** — parallel worker worktrees are now siblings (`.worktrees/<track_id>_worker_<N>_<name>`) instead of nested children (`.worktrees/<track_id>/worker_<N>_<name>`), which git requires.
+- **`bd ready --parent` flag** — corrected from `--epic` which does not exist in the Beads CLI.
+
+### New Features
+- **`.beads/` merge conflict auto-resolution** — `conductor-setup` now adds `.beads/** merge=ours` to `.gitattributes` so PR merges never conflict on the Dolt database.
+- **Archive rebase + PR guidance** — `conductor-archive` now rebases the track branch onto main, resolves `.beads/` conflicts automatically, and guides PR creation instead of auto-merging.
+- **Explicit archive commit staging** — archive commits now explicitly stage deleted track files (`git rm -r`) to avoid ghost entries.
+- **Dolt state flush in archive** — `bd dolt push` is called before rebasing to ensure no pending Dolt changes are lost.
+
+### Migration from v0.1.0
+
+If you have existing projects set up with v0.1.0, run the migration script from your **project root**:
+
+```bash
+# Dry-run first (shows what would change, no writes)
+bash /path/to/conductor-beads/scripts/migrate-v2.sh --dry-run
+
+# Apply migration
+bash /path/to/conductor-beads/scripts/migrate-v2.sh
+```
+
+**What the migration script fixes:**
+| Issue | Fix Applied |
+|-------|-------------|
+| Nested worker worktrees | `git worktree move` to flat paths |
+| Missing `.beads/` merge strategy | Adds `.beads/** merge=ours` to `.gitattributes` |
+| Stale `parallel_state.json` paths | Updates stored worktree paths via `sed` |
+| Track branch missing scaffold files | Warns with exact `git cherry-pick` commands to fix |
+
+See [`scripts/migrate-v2.sh`](scripts/migrate-v2.sh) for full details.
+
+---
 
 ## Supported Platforms
 
@@ -346,7 +384,11 @@ your-project/
 │           ├── plan.md      # Task list
 │           ├── learnings.md # Patterns/gotchas discovered
 │           └── metadata.json
-└── .beads/                  # Beads data (if initialized)
+├── .beads/                  # Beads Dolt DB (if initialized)
+├── .gitattributes           # .beads/** merge=ours (added by setup)
+└── .worktrees/              # Git worktrees (flat — no nesting)
+    ├── <track_id>/          # Track worktree (branch: track/<track_id>)
+    └── <track_id>_worker_0_<name>/  # Parallel worker (branch: track_<id>_worker_0_<name>)
 ```
 
 ---

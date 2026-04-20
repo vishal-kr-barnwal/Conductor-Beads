@@ -92,7 +92,7 @@ Implement track: $ARGUMENTS
     - **Step 1:** `bd prime` — loads AI-optimized workflow context for the entire project
     - **Step 2:** `bd show <beads_epic>` — read the `notes` field for prior session state
       (COMPLETED, IN PROGRESS, NEXT, KEY DECISIONS from previous sessions)
-    - **Step 3:** `bd ready --epic <beads_epic>` — find all unblocked tasks now
+    - **Step 3:** `bd ready --parent <beads_epic>` — find all unblocked tasks now
     - **Announce:** "📊 **Beads Context:** X tasks ready, last session: [notes summary]"
     - **If any `bd` command fails:** → Follow Beads Error Handler Protocol (see references/beads-error-handler.md)
 
@@ -120,7 +120,7 @@ Implement track: $ARGUMENTS
       - Read `conductor/tracks/<track_id>/metadata.json` for `beads_epic` and `beads_tasks` fields
       - Store `beads_tasks` mapping (maps plan task names to Beads IDs like `"phase1_task1": "bd-a3f8.1.1"`)
       - If `beads_epic` exists:
-        - Run `bd ready --epic <beads_epic>` to show tasks with no blockers
+        - Run `bd ready --parent <beads_epic>` to show tasks with no blockers
         - **If command fails:**
           > "⚠️ Beads command failed: <error message>"
           > "A) Continue without Beads integration"
@@ -131,6 +131,20 @@ Implement track: $ARGUMENTS
           - If C: HALT and wait for user
         - Display: "📊 **Beads Status:** X tasks ready, Y blocked"
         - Use Beads ready list to suggest next task
+
+3c. **Switch to Track Worktree:**
+   - Read `conductor/tracks/<track_id>/metadata.json` → get `worktree_path` and `git_branch`
+   - **If worktree_path exists on disk:**
+     - Announce: "Switching to worktree `<worktree_path>` on branch `<git_branch>`"
+     - **CRITICAL: All subsequent file operations and git commands MUST use `<worktree_path>/` as the working root — not the repo root**
+     - Verify: `git -C <worktree_path> branch --show-current` == `<git_branch>`
+     - If branch mismatch: HALT — announce mismatch and await user
+   - **Else (degraded — worktree not found):**
+     - Check current branch: `git branch --show-current`
+     - If not on `<git_branch>`: run `git checkout <git_branch>`
+     - Announce: "Switched to `<git_branch>` (worktree missing — degraded mode)"
+   - **HALT if neither path succeeds:**
+     - Announce: "Cannot switch to track branch `<git_branch>`. Please check git state." → await user
 
 4. **Check and Load Resume State:**
 
@@ -200,7 +214,7 @@ Implement track: $ARGUMENTS
       **c4. Initialize Worker Worktrees (replaces file_locks):**
       - For each parallel task, create an isolated git worktree with Beads redirect:
         ```bash
-        bd worktree create .worktrees/<track_id>/worker_<N>_<sanitized_name> \
+        bd worktree create .worktrees/<track_id>_worker_<N>_<sanitized_name> \
           --branch track_<track_id>_worker_<N>_<sanitized_name>
         ```
       - `bd worktree` auto-configures a `.beads` redirect file in each worktree pointing to the root `.beads/` database. All workers share one Dolt DB — no file_locks needed.
@@ -222,7 +236,7 @@ Implement track: $ARGUMENTS
         ```bash
         bd update <beads_task_id> --status in_progress \
           --assignee worker_<N>_<name> \
-          --notes "PARALLEL WORKER: Starting in .worktrees/<track_id>/worker_<N>" \
+          --notes "PARALLEL WORKER: Starting in .worktrees/<track_id>_worker_<N>" \
           --json
         ```
       - For each task in the current wave (no unmet dependencies), spawn a sub-agent:
@@ -234,7 +248,7 @@ Implement track: $ARGUMENTS
 
             ## Identity
             - Worker ID: <worker_id>
-            - Working directory: .worktrees/<track_id>/worker_<N>_<name>/
+            - Working directory: .worktrees/<track_id>_worker_<N>_<name>/
             - All file reads/writes MUST use this path as your root.
             - Branch: track_<track_id>_worker_<N>_<name>
 
@@ -274,7 +288,7 @@ Implement track: $ARGUMENTS
           "worker_id": "worker_<N>_<sanitized_name>",
           "task": "<task_description>",
           "beads_task_id": "<beads_id>",
-          "worktree": ".worktrees/<track_id>/worker_<N>_<sanitized_name>",
+          "worktree": ".worktrees/<track_id>_worker_<N>_<sanitized_name>",
           "branch": "track_<track_id>_worker_<N>_<sanitized_name>",
           "depends_on": ["<task_id>"],
           "status": "in_progress",
@@ -286,7 +300,7 @@ Implement track: $ARGUMENTS
       - Task() calls are awaitable — wait for all current wave workers to complete.
       - After each wave completes, use Beads (not parallel_state.json) to find the next wave:
         ```bash
-        bd ready --epic <epic_id> --json
+        bd ready --parent <epic_id> --json
         ```
         - Any newly ready tasks (whose `depends_on` workers just closed via `--continue`) form the next wave.
         - Spawn next wave workers (repeat c5).
@@ -302,13 +316,13 @@ Implement track: $ARGUMENTS
         # For each worker in order:
         git merge --no-ff track_<track_id>_worker_<N>_<name> \
           -m "conductor(parallel): merge worker_<N>: <task_description>"
-        bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
+        bd worktree remove .worktrees/<track_id>_worker_<N>_<name>
         ```
       - **If merge conflict:** HALT immediately. Show conflicting files and ask user to resolve before continuing.
       - **If Beads enabled:** After all merges:
         ```bash
         bd dolt push  # One push for all workers combined
-        bd ready --epic <epic_id> --json  # Verify all tasks complete
+        bd ready --parent <epic_id> --json  # Verify all tasks complete
         bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>
         WORKERS: <N> succeeded
         COMMITS: <sha_list>" --json

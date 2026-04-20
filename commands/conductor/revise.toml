@@ -24,7 +24,7 @@ If `metadata.json` has a `worktree_path` field:
   > "B) Revise now (affected workers may need restart)"
   > "C) Cancel revision"
 
-  - If A: Poll `bd ready --epic <epic_id>` until it returns empty, then proceed
+  - If A: Poll `bd ready --parent <epic_id>` until it returns empty, then proceed
   - If B: Note affected tasks in revision; workers on changed tasks should abort and restart after revision
   - If C: HALT
 

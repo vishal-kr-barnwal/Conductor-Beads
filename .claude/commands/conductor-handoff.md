@@ -24,7 +24,7 @@ If `metadata.json` has a `worktree_path` field:
   > "B) Create handoff anyway (workers will continue in their worktrees)"
   > "C) Cancel handoff"
 
-  - If A: Poll `bd ready --epic <epic_id>` until it returns empty (all tasks closed/blocked), then proceed
+  - If A: Poll `bd ready --parent <epic_id>` until it returns empty (all tasks closed/blocked), then proceed
   - If B: Include active worktree list and `bd show <epic_id>` notes in handoff document
   - If C: HALT
 
@@ -80,7 +80,7 @@ Create `conductor/tracks/<track_id>/handoff_<YYYYMMDD_HHMMSS>.md` with:
 - **Worktree Path:** `worktree_path` from `metadata.json` (if track has a dedicated worktree)
 - **Beads Context:** Output of `bd show <epic_id>` — COMPLETED/IN PROGRESS/NEXT/KEY DECISIONS from epic notes
 - **Progress Summary:** Overall %, current phase/task, completed/remaining tasks
-- **Parallel Execution State:** (if applicable) Active worktrees from `git worktree list`, `bd ready --epic` output
+- **Parallel Execution State:** (if applicable) Active worktrees from `git worktree list`, `bd ready --parent` output
 - **Key Implementation Decisions:** Important choices made during this section
 - **Code Changes Summary:** Files modified, new files, recent commits
 - **Learnings Extracted:** Key patterns/gotchas from `learnings.md` this section
@@ -165,10 +165,10 @@ Display:
    - If any `bd` command fails: Follow Beads Error Handler Protocol (see `references/beads-error-handler.md`)
 
 3. **Parallel Workers Handoff (if active worktrees exist):**
-   - For each open worker task (from `bd ready --epic <id>` or tasks still `in_progress`):
+   - For each open worker task (from `bd ready --parent <id>` or tasks still `in_progress`):
      ```bash
      bd note <worker_beads_task_id> "HANDOFF: Worker state saved
-     WORKTREE: .worktrees/<track_id>/worker_<N>_<name>
+     WORKTREE: .worktrees/<track_id>_worker_<N>_<name>
      BRANCH: track_<track_id>_worker_<N>_<name>
      STATUS: <in_progress|pending>
      PROGRESS: <description of work done so far>" --json
@@ -177,7 +177,7 @@ Display:
      ```bash
      bd note <epic_id> "PARALLEL_HANDOFF: <N> workers active
      ACTIVE_WORKTREES: <list from git worktree list>
-     READY_NEXT: <output of bd ready --epic <id>>" --json
+     READY_NEXT: <output of bd ready --parent <id>>" --json
      ```
 
 4. **Format for Compaction Recovery:**

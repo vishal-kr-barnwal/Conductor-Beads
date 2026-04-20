@@ -233,13 +233,6 @@ Create a new track for: $ARGUMENTS
 
 6. **Create Directory:** `conductor/tracks/<track_id>/`
 
-6a. **Create Track Worktree (Git + Beads isolation):**
-   - Run: `bd worktree create .worktrees/<track_id> --branch track/<track_id>`
-   - This creates a git worktree on branch `track/<track_id>` AND auto-configures a `.beads` redirect file inside the worktree so Beads/Dolt is shared from the root `.beads/` database.
-   - **If `bd` command fails:** → Follow Beads Error Handler Protocol (see references/beads-error-handler.md)
-     - If degraded (A): Fall back to `git checkout -b track/<track_id>` (no Beads redirect configured)
-   - Announce: "Created worktree at `.worktrees/<track_id>` on branch `track/<track_id>`"
-
 7. **Create `metadata.json`:**
    ```json
    {
@@ -300,6 +293,21 @@ Create a new track for: $ARGUMENTS
      ## [ ] Track: <Track Description>
      *Link: [./conductor/tracks/<track_id>/](./conductor/tracks/<track_id>/)*
      ```
+
+10a. **Scaffold Commit + Create Worktree:**
+   - Stage and commit all conductor files to main:
+     ```bash
+     git add conductor/tracks/<track_id>/
+     git add conductor/tracks.md
+     git commit -m "conductor(newtrack): scaffold <track_id>"
+     ```
+   - Create the worktree (track branch now inherits all scaffold files):
+     ```bash
+     bd worktree create .worktrees/<track_id> --branch track/<track_id>
+     ```
+   - **If `bd` command fails:** → Follow Beads Error Handler Protocol (see references/beads-error-handler.md)
+     - Degraded fallback: `git checkout -b track/<track_id>`
+   - Announce: "Worktree ready at `.worktrees/<track_id>` on branch `track/<track_id>`"
 
 11. **Announce Completion:**
     > "New track '<track_id>' has been created and added to the tracks file. Run `/conductor-implement` to start."

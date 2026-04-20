@@ -84,7 +84,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     **Priority order — BEADS FIRST (if enabled):**
     - **Step 1:** `bd prime` — loads AI-optimized workflow context for the entire project
     - **Step 2:** `bd show <beads_epic>` — read the `notes` field for prior session state
-    - **Step 3:** `bd ready --epic <beads_epic>` — find all unblocked tasks now
+    - **Step 3:** `bd ready --parent <beads_epic>` — find all unblocked tasks now
     - **Announce:** "📊 **Beads Context:** X tasks ready, last session: [notes summary]"
 
     **FILE FALLBACK (if Beads disabled):**
@@ -108,7 +108,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
       - Read `conductor/tracks/<track_id>/metadata.json` for `beads_epic` and `beads_tasks` fields
       - Store `beads_tasks` mapping (maps plan task names to Beads IDs like `"phase1_task1": "bd-a3f8.1.1"`)
       - If `beads_epic` exists:
-        - Run `bd ready --epic <beads_epic>` to show tasks with no blockers
+        - Run `bd ready --parent <beads_epic>` to show tasks with no blockers
         - **If command fails:**
           > "⚠️ Beads command failed: <error message>"
           > "A) Continue without Beads integration"
@@ -119,6 +119,20 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
           - If C: HALT and wait for user
         - Display: "📊 **Beads Status:** X tasks ready, Y blocked"
         - Use Beads ready list to suggest next task
+
+3c. **Switch to Track Worktree:**
+   - Read `conductor/tracks/<track_id>/metadata.json` → get `worktree_path` and `git_branch`
+   - **If worktree_path exists on disk:**
+     - Announce: "Switching to worktree `<worktree_path>` on branch `<git_branch>`"
+     - **CRITICAL: All subsequent file operations and git commands MUST use `<worktree_path>/` as the working root — not the repo root**
+     - Verify: `git -C <worktree_path> branch --show-current` == `<git_branch>`
+     - If branch mismatch: HALT — announce mismatch and await user
+   - **Else (degraded — worktree not found):**
+     - Check current branch: `git branch --show-current`
+     - If not on `<git_branch>`: run `git checkout <git_branch>`
+     - Announce: "Switched to `<git_branch>` (worktree missing — degraded mode)"
+   - **HALT if neither path succeeds:**
+     - Announce: "Cannot switch to track branch `<git_branch>`. Please check git state." → await user
 
 4. **Check and Load Resume State:**
 
@@ -183,7 +197,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
       **c4. Initialize Worker Worktrees (replaces file_locks):**
       - For each parallel task, create an isolated git worktree:
         ```bash
-        bd worktree create .worktrees/<track_id>/worker_<N>_<name> \
+        bd worktree create .worktrees/<track_id>_worker_<N>_<name> \
           --branch track_<track_id>_worker_<N>_<name>
         ```
       - `bd worktree` auto-configures `.beads` redirect in each worktree — all workers share one Dolt DB.
@@ -196,7 +210,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
           --assignee worker_<N>_<name> --json
         ```
       - For each task in current wave, spawn a sub-agent:
-        - Worker directory: `.worktrees/<track_id>/worker_<N>/`
+        - Worker directory: `.worktrees/<track_id>_worker_<N>/`
         - Worker fetches task context via: `bd show <beads_task_id>` (design + acceptance fields)
         - Worker completion sequence:
           1. Commit code on worker branch
@@ -208,7 +222,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
       **c6. Wave-Model Monitoring (Beads-driven, no polling):**
       - Task() calls are awaitable — wait for current wave to complete.
-      - After each wave: run `bd ready --epic <epic_id> --json` to find next wave tasks.
+      - After each wave: run `bd ready --parent <epic_id> --json` to find next wave tasks.
       - Spawn next wave. Repeat until `bd ready` returns empty.
       - Failed workers: reset via `bd update <id> --assignee "" --status open --json`
 
@@ -217,13 +231,13 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         ```bash
         git merge --no-ff track_<track_id>_worker_<N>_<name> \
           -m "conductor(parallel): merge worker_<N>: <task>"
-        bd worktree remove .worktrees/<track_id>/worker_<N>_<name>
+        bd worktree remove .worktrees/<track_id>_worker_<N>_<name>
         ```
       - If merge conflict: HALT, show files, ask user to resolve.
       - After all merges:
         ```bash
         bd dolt push  # One push for all workers
-        bd ready --epic <epic_id> --json  # Verify all complete
+        bd ready --parent <epic_id> --json  # Verify all complete
         bd note <epic_id> "PARALLEL PHASE COMPLETE: <phase>
         WORKERS: <N> succeeded
         COMMITS: <sha_list>" --json
