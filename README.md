@@ -72,7 +72,7 @@ Beads provides persistent, structured memory for coding agents. Install using on
 npm install -g @beads/bd
 
 # Homebrew (macOS/Linux)
-brew install steveyegge/beads/bd
+brew install beads
 
 # Go
 go install github.com/steveyegge/beads/cmd/bd@latest
